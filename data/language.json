@@ -1,0 +1,227 @@
+{
+ "name": "Color Key reference colors",
+ "version": "1.0",
+ "note": "The first layer names the harmony. This file is the second layer: which color each kind of chord takes. It can change without touching the first.",
+ "families": [
+  {
+   "id": "tonic",
+   "triad": "#00A22B",
+   "seventh": "#035C27",
+   "numerals": "I · i",
+   "term": {
+    "en": "tonic"
+   },
+   "plain": {
+    "en": "Tonic"
+   },
+   "short": {
+    "en": "home; the chord a phrase rests on"
+   }
+  },
+  {
+   "id": "dominant",
+   "triad": "#DF1A14",
+   "seventh": "#811625",
+   "numerals": "V · V7 · vii°",
+   "term": {
+    "en": "dominant"
+   },
+   "plain": {
+    "en": "Dominant"
+   },
+   "short": {
+    "en": "tension that wants to resolve to the tonic"
+   }
+  },
+  {
+   "id": "subdominant",
+   "triad": "#1A5BEE",
+   "seventh": "#18328A",
+   "numerals": "IV · iv",
+   "term": {
+    "en": "subdominant"
+   },
+   "plain": {
+    "en": "Subdominant"
+   },
+   "short": {
+    "en": "a step away from home"
+   }
+  },
+  {
+   "id": "supertonic",
+   "triad": "#A78EDD",
+   "seventh": "#5E499D",
+   "numerals": "ii · ii° · iiø7",
+   "term": {
+    "en": "supertonic"
+   },
+   "plain": {
+    "en": "Supertonic"
+   },
+   "short": {
+    "en": "prepares the dominant"
+   }
+  },
+  {
+   "id": "neapolitan",
+   "triad": "#9337C1",
+   "seventh": "#5E1B69",
+   "numerals": "N6 (♭II)",
+   "term": {
+    "en": "Neapolitan"
+   },
+   "plain": {
+    "en": "Neapolitan"
+   },
+   "short": {
+    "en": "a darker chord from outside the key"
+   }
+  },
+  {
+   "id": "submediant",
+   "triad": "#E0AB10",
+   "seventh": "#8C7107",
+   "numerals": "vi · VI",
+   "term": {
+    "en": "submediant"
+   },
+   "plain": {
+    "en": "Submediant"
+   },
+   "short": {
+    "en": "close to home; where a deceptive cadence lands"
+   }
+  },
+  {
+   "id": "mediant",
+   "triad": "#038F91",
+   "seventh": "#016675",
+   "numerals": "iii · III",
+   "term": {
+    "en": "mediant"
+   },
+   "plain": {
+    "en": "Mediant"
+   },
+   "short": {
+    "en": "shares two notes with the tonic"
+   }
+  },
+  {
+   "id": "subtonic",
+   "triad": "#E46D0B",
+   "seventh": "#7D4007",
+   "numerals": "VII · ♭VII",
+   "term": {
+    "en": "subtonic"
+   },
+   "plain": {
+    "en": "Subtonic"
+   },
+   "short": {
+    "en": "a major chord one step below the tonic"
+   }
+  },
+  {
+   "id": "applied",
+   "triad": "#DD4490",
+   "seventh": "#942970",
+   "numerals": "V/V · vii°/V · It6 Fr6 Ger6",
+   "term": {
+    "en": "applied chord"
+   },
+   "plain": {
+    "en": "Applied chord"
+   },
+   "short": {
+    "en": "a dominant aimed at a chord other than the tonic"
+   }
+  }
+ ],
+ "wheel": {
+  "note": "Harmony wheel, clockwise from the top. Each step clockwise is the usual motion of harmony; span is the wedge's angle in degrees and the spans add up to 360.",
+  "order": [
+   {
+    "id": "tonic",
+    "span": 48
+   },
+   {
+    "id": "subtonic",
+    "span": 28
+   },
+   {
+    "id": "mediant",
+    "span": 36
+   },
+   {
+    "id": "submediant",
+    "span": 40
+   },
+   {
+    "id": "subdominant",
+    "span": 44
+   },
+   {
+    "id": "supertonic",
+    "span": 44
+   },
+   {
+    "id": "neapolitan",
+    "span": 32
+   },
+   {
+    "id": "applied",
+    "span": 40
+   },
+   {
+    "id": "dominant",
+    "span": 48
+   }
+  ]
+ },
+ "unknown": {
+  "id": "unknown",
+  "triad": "#9A9A9A",
+  "seventh": "#9A9A9A",
+  "term": {
+   "en": "no reading"
+  },
+  "plain": {
+   "en": "No reading"
+  },
+  "short": {
+   "en": "the notes are not ones it knows"
+  }
+ },
+ "pitch": {
+  "names": [
+   "C",
+   "C♯ / D♭",
+   "D",
+   "D♯ / E♭",
+   "E",
+   "F",
+   "F♯ / G♭",
+   "G",
+   "G♯ / A♭",
+   "A",
+   "A♯ / B♭",
+   "B"
+  ],
+  "colors": [
+   "#D7263D",
+   "#E8590C",
+   "#F59F00",
+   "#B59B00",
+   "#74B816",
+   "#2F9E44",
+   "#0CA678",
+   "#1098AD",
+   "#1C7ED6",
+   "#4263EB",
+   "#7048E8",
+   "#C2255C"
+  ]
+ }
+}
