@@ -1,0 +1,23 @@
+[
+ {
+  "id": "chopin",
+  "short": "Chopin, Prelude in C minor",
+  "title": "Prelude in C minor, Op. 28 No. 20",
+  "composer": "Frédéric Chopin",
+  "file": "examples/chopin-prelude-op28-20.xml"
+ },
+ {
+  "id": "bach",
+  "short": "Bach, Prelude in C",
+  "title": "Prelude in C major, BWV 846",
+  "composer": "Johann Sebastian Bach",
+  "file": "examples/bach-prelude-bwv846.xml"
+ },
+ {
+  "id": "mozart",
+  "short": "Mozart, Sonata in C, first movement",
+  "title": "Piano Sonata in C major, K. 545, I. Allegro",
+  "composer": "Wolfgang Amadeus Mozart",
+  "file": "examples/mozart-k545-1.xml"
+ }
+]
