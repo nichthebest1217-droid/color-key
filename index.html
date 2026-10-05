@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Color Key</title>
+<meta name="description" content="Drop a MusicXML score and see its harmony in color. A reference for learning musicians.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav" aria-label="Sections">
+    <div class="col nav-in">
+      <a class="brand" href="#top"><svg viewBox="0 0 26 20" aria-hidden="true"><ellipse cx="8" cy="12" rx="7" ry="5" transform="rotate(-20 8 12)" fill="var(--c-tonic, currentColor)"/><ellipse cx="18" cy="8" rx="7" ry="5" transform="rotate(-20 18 8)" fill="var(--c-dominant, currentColor)" opacity=".92"/></svg>Color Key</a>
+      <div class="nav-links">
+        <a href="#colors">The colors</a>
+        <a href="#how">How a score is read</a>
+        <a href="#mind">Keep in mind</a>
+        <a href="#sources">Sources</a>
+        <a href="#why">Why this exists</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero col" id="top">
+    <div class="hero-text">
+      <h1 class="mark">Color Key</h1>
+      <canvas class="ribbon" id="ribbon" aria-hidden="true"></canvas>
+      <p class="lede">Drop a score and see its harmony in color. Each chord is colored by what it does in its key, and named underneath.</p>
+    </div>
+    <div class="hero-tool">
+      <!-- The one way in. MusicXML is read here; a PDF or a photo goes to window.ColorKeyOMR.open(file) when that reader is present (see openAny in app.js). -->
+      <label class="drop" id="drop" tabindex="0">
+        <svg class="drop-staff" viewBox="0 0 240 56" aria-hidden="true">
+          <g stroke="currentColor" stroke-width="1" opacity=".35"><path d="M0 12H240M0 20H240M0 28H240M0 36H240M0 44H240"/></g>
+          <g>
+            <ellipse cx="34" cy="40" rx="6.4" ry="4.6" transform="rotate(-20 34 40)" fill="var(--c-tonic, currentColor)"/>
+            <ellipse cx="34" cy="32" rx="6.4" ry="4.6" transform="rotate(-20 34 32)" fill="var(--c-tonic, currentColor)"/>
+            <ellipse cx="34" cy="24" rx="6.4" ry="4.6" transform="rotate(-20 34 24)" fill="var(--c-tonic, currentColor)"/>
+            <ellipse cx="82" cy="36" rx="6.4" ry="4.6" transform="rotate(-20 82 36)" fill="var(--c-submediant, currentColor)"/>
+            <ellipse cx="82" cy="28" rx="6.4" ry="4.6" transform="rotate(-20 82 28)" fill="var(--c-submediant, currentColor)"/>
+            <ellipse cx="82" cy="20" rx="6.4" ry="4.6" transform="rotate(-20 82 20)" fill="var(--c-submediant, currentColor)"/>
+            <ellipse cx="130" cy="44" rx="6.4" ry="4.6" transform="rotate(-20 130 44)" fill="var(--c-subdominant, currentColor)"/>
+            <ellipse cx="130" cy="36" rx="6.4" ry="4.6" transform="rotate(-20 130 36)" fill="var(--c-subdominant, currentColor)"/>
+            <ellipse cx="130" cy="28" rx="6.4" ry="4.6" transform="rotate(-20 130 28)" fill="var(--c-subdominant, currentColor)"/>
+            <ellipse cx="178" cy="40" rx="6.4" ry="4.6" transform="rotate(-20 178 40)" fill="var(--c-dominant, currentColor)"/>
+            <ellipse cx="178" cy="32" rx="6.4" ry="4.6" transform="rotate(-20 178 32)" fill="var(--c-dominant, currentColor)"/>
+            <ellipse cx="178" cy="24" rx="6.4" ry="4.6" transform="rotate(-20 178 24)" fill="var(--c-dominant, currentColor)"/>
+            <ellipse cx="178" cy="16" rx="6.4" ry="4.6" transform="rotate(-20 178 16)" fill="var(--c-dominant-7, currentColor)"/>
+            <ellipse cx="220" cy="40" rx="6.4" ry="4.6" transform="rotate(-20 220 40)" fill="var(--c-tonic, currentColor)"/>
+            <ellipse cx="220" cy="32" rx="6.4" ry="4.6" transform="rotate(-20 220 32)" fill="var(--c-tonic, currentColor)"/>
+            <ellipse cx="220" cy="24" rx="6.4" ry="4.6" transform="rotate(-20 220 24)" fill="var(--c-tonic, currentColor)"/>
+          </g>
+        </svg>
+        <strong id="dropTitle">Drop a MusicXML file here</strong>
+        <span id="dropSub">or click to choose one (.musicxml, .xml, .mxl). It stays on your device.</span>
+        <input type="file" id="file" accept=".musicxml,.xml,.mxl,.pdf,.png,.jpg,.jpeg">
+      </label>
+      <p class="drop-note" id="dropNote" role="status"></p>
+      <p class="tries" id="tries"><span>Or try one:</span></p>
+    </div>
+  </header>
+
+  <div class="col">
+    <div id="omr" hidden></div>
+    <section class="result" id="result" hidden>
+      <div class="head">
+        <div>
+          <h2 class="piece" id="piece"></h2>
+          <p class="by" id="by"></p>
+        </div>
+        <div class="tools">
+          <div class="seg" role="group" aria-label="What the colors show">
+            <button type="button" data-view="harmony" aria-pressed="true">Harmony Color</button>
+            <button type="button" data-view="pitch" aria-pressed="false">Pitch Color</button>
+          </div>
+          <button class="btn solid" id="save" type="button" disabled>Download colored score</button>
+          <button class="btn" id="print" type="button">Print</button>
+        </div>
+      </div>
+      <div class="river" id="river" tabindex="0" role="slider" aria-label="The piece from first bar to last. Arrow keys move along it; Enter goes to that bar in the score." aria-valuemin="1" aria-valuemax="1" aria-valuenow="1">
+        <canvas id="riverCanvas"></canvas>
+        <span class="river-mark" id="riverMark" hidden></span>
+      </div>
+      <p class="river-cap" id="riverCap"></p>
+      <p class="keys" id="keys"></p>
+      <p class="facts" id="facts"></p>
+      <ul class="legend" id="legend"></ul>
+      <p class="status" id="status" role="status"></p>
+      <div class="sheet" id="sheet"><div id="score"></div></div>
+      <p class="hint" id="hint"></p>
+    </section>
+  </div>
+
+  <section class="band" id="colors">
+    <div class="col">
+      <h2>The colors</h2>
+      <p class="intro">A chord's color comes from what it does in the key at that moment. The tonic is green and the dominant is red in every key, so the same color always means the same role.</p>
+
+      <div class="duo">
+        <figure class="wheel-fig">
+          <div class="wheel" id="harmonyWheel"></div>
+          <figcaption>Tonic at the top. Clockwise is the usual motion of harmony, away from the tonic and back to it.</figcaption>
+        </figure>
+        <div class="duo-text">
+          <h3>Harmony Color</h3>
+          <div class="cap" id="harmonyCap" aria-live="polite"></div>
+          <ul class="sr" id="harmonyList"></ul>
+          <ul class="notes">
+            <li>A lighter shade is a three-note chord. A deeper shade of the same color is a seventh chord.</li>
+            <li>Every note that begins while a chord lasts takes that chord's color, passing notes included.</li>
+            <li>The Roman numeral under the staff names the chord. A letter with a colon, such as <span class="num">c♯:</span> or <span class="num">E:</span>, marks a change of key (lower case for minor).</li>
+            <li>A small question mark means the reading is unsure. Gray means no reading.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="duo flip">
+        <figure class="wheel-fig small">
+          <div class="wheel" id="pitchWheel"></div>
+        </figure>
+        <div class="duo-text">
+          <h3>Pitch Color</h3>
+          <p>In Pitch Color, each of the twelve notes has its own color, whatever the key.</p>
+          <ul class="sr" id="pitchList"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="col">
+      <h2>How a score is read</h2>
+      <p class="intro">Every piece is read on its own, from its first bar to its last. Nothing is sent anywhere: the reading runs in your browser.</p>
+      <ol class="steps">
+        <li>
+          <svg viewBox="0 0 120 64" aria-hidden="true">
+            <g stroke="currentColor" opacity=".3"><path d="M4 16H116M4 24H116M4 32H116M4 40H116M4 48H116"/></g>
+            <g fill="currentColor" opacity=".55"><ellipse cx="24" cy="44" rx="5.4" ry="3.9" transform="rotate(-20 24 44)"/><ellipse cx="44" cy="36" rx="5.4" ry="3.9" transform="rotate(-20 44 36)"/><ellipse cx="64" cy="28" rx="5.4" ry="3.9" transform="rotate(-20 64 28)"/><ellipse cx="84" cy="36" rx="5.4" ry="3.9" transform="rotate(-20 84 36)"/><ellipse cx="104" cy="44" rx="5.4" ry="3.9" transform="rotate(-20 104 44)"/></g>
+            <rect x="33" y="8" width="62" height="48" rx="6" fill="none" stroke="var(--c-tonic, currentColor)" stroke-width="2"/>
+          </svg>
+          <p><b>Find the key.</b> Around each beat, it asks which key the notes fit best. It starts from the key signature, and a new key has to hold for a while before it counts, so one borrowed chord does not move the key.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 120 64" aria-hidden="true">
+            <g stroke="currentColor" opacity=".3"><path d="M4 16H116M4 24H116M4 32H116M4 40H116M4 48H116"/></g>
+            <g fill="currentColor" opacity=".55"><ellipse cx="16" cy="44" rx="5.4" ry="3.9" transform="rotate(-20 16 44)"/><ellipse cx="32" cy="36" rx="5.4" ry="3.9" transform="rotate(-20 32 36)"/><ellipse cx="54" cy="40" rx="5.4" ry="3.9" transform="rotate(-20 54 40)"/><ellipse cx="70" cy="32" rx="5.4" ry="3.9" transform="rotate(-20 70 32)"/><ellipse cx="96" cy="44" rx="5.4" ry="3.9" transform="rotate(-20 96 44)"/></g>
+            <g stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"><path d="M6 6V58M44 6V58M86 6V58"/></g>
+          </svg>
+          <p><b>Find where chords change.</b> A new chord begins on a beat where a new note enters or the bass moves.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 120 64" aria-hidden="true">
+            <g stroke="currentColor" opacity=".3"><path d="M4 16H60M4 24H60M4 32H60M4 40H60M4 48H60"/></g>
+            <g fill="currentColor" opacity=".55"><ellipse cx="30" cy="44" rx="5.4" ry="3.9" transform="rotate(-20 30 44)"/><ellipse cx="30" cy="36" rx="5.4" ry="3.9" transform="rotate(-20 30 36)"/><ellipse cx="30" cy="28" rx="5.4" ry="3.9" transform="rotate(-20 30 28)"/><ellipse cx="30" cy="20" rx="5.4" ry="3.9" transform="rotate(-20 30 20)"/></g>
+            <path d="M68 32H84M79 27l6 5-6 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="92" y="39" class="g-num" font-size="21" fill="currentColor">V7</text>
+          </svg>
+          <p><b>Name each chord from its notes.</b> The notes are looked up among 34,803 chords that expert analysts labeled by hand in Mozart's piano sonatas and Beethoven's string quartets. Each candidate name keeps its count.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 120 64" aria-hidden="true">
+            <g class="g-num" font-size="21" fill="currentColor" text-anchor="middle"><text x="13" y="39">IV</text><text x="60" y="39">V7</text><text x="108" y="39">I</text></g>
+            <g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M30 32H40M36 28l5 4-5 4"/><path d="M82 32H94M90 28l5 4-5 4"/></g>
+            <path d="M13 48C34 60 88 60 108 48" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 3" opacity=".6"/>
+          </svg>
+          <p><b>Read it in context.</b> Which chord tends to follow which was counted in the same analyses, over 39,677 steps from one chord to the next. The whole chain of chords in a key is then chosen together, so each name fits both its own notes and the chord before and after it. A chord that simply continues stays the same chord.</p>
+        </li>
+        <li>
+          <svg viewBox="0 0 120 64" aria-hidden="true">
+            <g stroke="currentColor" opacity=".3"><path d="M4 12H116M4 20H116M4 28H116M4 36H116M4 44H116"/></g>
+            <g fill="var(--c-subdominant, currentColor)"><ellipse cx="22" cy="40" rx="5.4" ry="3.9" transform="rotate(-20 22 40)"/><ellipse cx="22" cy="32" rx="5.4" ry="3.9" transform="rotate(-20 22 32)"/><ellipse cx="22" cy="24" rx="5.4" ry="3.9" transform="rotate(-20 22 24)"/></g>
+            <g fill="var(--c-dominant-7, currentColor)"><ellipse cx="60" cy="44" rx="5.4" ry="3.9" transform="rotate(-20 60 44)"/><ellipse cx="60" cy="36" rx="5.4" ry="3.9" transform="rotate(-20 60 36)"/><ellipse cx="60" cy="28" rx="5.4" ry="3.9" transform="rotate(-20 60 28)"/><ellipse cx="60" cy="20" rx="5.4" ry="3.9" transform="rotate(-20 60 20)"/></g>
+            <g fill="var(--c-tonic, currentColor)"><ellipse cx="98" cy="40" rx="5.4" ry="3.9" transform="rotate(-20 98 40)"/><ellipse cx="98" cy="32" rx="5.4" ry="3.9" transform="rotate(-20 98 32)"/><ellipse cx="98" cy="24" rx="5.4" ry="3.9" transform="rotate(-20 98 24)"/></g>
+            <g class="g-num" font-size="13" fill="currentColor" text-anchor="middle"><text x="22" y="61">IV</text><text x="60" y="61">V7</text><text x="98" y="61">I</text></g>
+          </svg>
+          <p><b>Color it.</b> The chord's role gives the color, and the name is written under the staff.</p>
+        </li>
+      </ol>
+      <p class="quiet">Click any Roman numeral in the score to see why that chord was read that way.</p>
+    </div>
+  </section>
+
+  <section class="band" id="mind">
+    <div class="col">
+      <h2>Keep in mind</h2>
+      <ul class="mind">
+        <li><b>It is a reference, not an answer key.</b> Harmony can be heard in more than one way, and analysts disagree with each other.</li>
+        <li><b>It knows the Classical style best.</b> Its examples are Mozart and Beethoven. In later or freer music you will see many question marks. That is the page telling you the music lies outside what it knows.</li>
+        <li><b>How often it agrees with an expert.</b> On 163 pieces it had never seen, the reading without step 4 chose the expert's key for 74.6% of the music and the expert's color for 66.9%. Adding step 4 raised the color figure from 70.3% to 72.9% on a separate set of 24 Mozart and Beethoven movements. Expect about two chords in three to match.</li>
+        <li><b>The key is the hard part.</b> When the key is wrong, the colors after it are wrong with it.</li>
+        <li><b>The colors are a choice.</b> For some kinds of color vision the green and the red are hard to tell apart. The Roman numeral is always there as a second cue.</li>
+        <li><b>Whether colors help someone learn has not been tested.</b> That is the hope behind the project, not a result.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="band" id="sources">
+    <div class="col">
+      <h2>Sources</h2>
+      <ul class="tiles">
+        <li>
+          <span class="kind">Expert analyses</span>
+          <h3>The Annotated Mozart Sonatas</h3>
+          <p>Hentschel, Neuwirth, Rohrmeier, 2021</p>
+          <span class="lic">CC BY-NC-SA 4.0</span>
+        </li>
+        <li>
+          <span class="kind">Expert analyses</span>
+          <h3>The Annotated Beethoven Corpus</h3>
+          <p>Neuwirth, Harasim, Moss, Rohrmeier, 2018</p>
+          <span class="lic">CC BY-NC-SA 4.0</span>
+        </li>
+        <li>
+          <span class="kind">Example scores: Bach and Chopin</span>
+          <h3>When in Rome</h3>
+          <p>Gotham, Micchi, Nápoles López, Sailor, 2023</p>
+          <span class="lic">CC BY-SA 4.0</span>
+        </li>
+        <li>
+          <span class="kind">Key profiles</span>
+          <h3>Dynamic melodic expectancy</h3>
+          <p>Aarden, 2003</p>
+          <span class="lic">PhD dissertation</span>
+        </li>
+        <li>
+          <span class="kind">Score drawing</span>
+          <h3>OpenSheetMusicDisplay</h3>
+          <p>Hosted with this site</p>
+          <span class="lic">BSD 3-Clause</span>
+        </li>
+        <li>
+          <span class="kind">File reading</span>
+          <h3>JSZip</h3>
+          <p>Hosted with this site</p>
+          <span class="lic">MIT</span>
+        </li>
+        <li>
+          <span class="kind">Reading printed music: practice pages</span>
+          <h3>MuseScore Studio</h3>
+          <p>Engraves the pages the reader learns from, in five music fonts</p>
+          <span class="lic">GPL 3 (the program)</span>
+        </li>
+        <li>
+          <span class="kind">Reading printed music: test on real scans</span>
+          <h3>OLiMPiC</h3>
+          <p>Mayer, Straka, Hajič jr., Pecina, 2024</p>
+          <span class="lic">CC BY-SA 4.0</span>
+        </li>
+        <li>
+          <span class="kind">PDF pages</span>
+          <h3>PDF.js</h3>
+          <p>Hosted with this site</p>
+          <span class="lic">Apache 2.0</span>
+        </li>
+        <li>
+          <span class="kind">Runs the reader in the browser</span>
+          <h3>ONNX Runtime Web</h3>
+          <p>Hosted with this site</p>
+          <span class="lic">MIT</span>
+        </li>
+      </ul>
+      <ul class="fine">
+        <li>The chord counts on this site are derived from the expert analyses and are shared under the same license. The Mozart example is from the Annotated Mozart Sonatas.</li>
+        <li>The harmony colors were worked out with a music-theory teacher, from a hand-colored example.</li>
+        <li>No account, no tracking, no AI service. Your score never leaves your device.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="band" id="why">
+    <div class="col why-grid">
+      <h2>Why this exists</h2>
+      <div class="prose">
+        <p class="lead">Sheet music is black and white. For many learners, reading it is the first wall.</p>
+        <p>I play music, and someone close to me is neurodivergent and plays too. During a summer internship I was asked to build something useful for autistic children. A music therapist showed me how strongly visual cues and music connect. Playing an instrument is good practice for fine motor skills, yet the notation is often what stands in the way.</p>
+        <p>My first idea was simple: color every note by its pitch, a rainbow from C up to the next C. That view is still here, under <b>Pitch Color</b>.</p>
+        <p>Then I wanted the colors to say more. Not which note this is, but what the harmony is doing. That is <b>Harmony Color</b>. It is meant as a reference for learning musicians: a way to see how sounds relate, and how one moves to the next.</p>
+        <p>I also have sound-to-color synesthesia. When I hear harmony, I see color. The composer Olivier Messiaen wrote about the colors he saw in his own chords and modes. People do not see the same colors, and no palette is the correct one. So this page has two layers. The first names the harmony. The second gives it a color, and that second layer is free to change.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="col">
+    <span>A reference, not an answer key. <a href="#how">How it works</a></span>
+    <span id="foot"></span>
+  </footer>
+</div>
+
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/opensheetmusicdisplay.min.js"></script>
+<script src="engine/colorkey.js"></script>
+<script src="engine/overlay.js"></script>
+<script src="reader/ui.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
