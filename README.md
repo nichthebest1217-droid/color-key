@@ -1,14 +1,16 @@
 # Color Key
 
-Drop a MusicXML score and see its harmony in color. A reference for learning musicians.
+Drop a score and see its harmony in color: a MusicXML file, a PDF, or a picture of printed music. A reference for learning musicians.
 
 This folder is the whole site: plain files, no build step, no server code. Any static host can serve it.
 
 - `index.html`, `style.css`, `app.js`: the page.
-- `engine/`: reads the score, finds the keys and chords, colors the notes.
+- `engine/`: reads the score, finds the keys and chords, colors the notes (`colorkey.js`), writes the numerals under the staff
+  (`overlay.js`), and reads each chord a second time by rule (`second.js`).
+- `reader/`: reads printed music from a PDF or a picture, on the visitor's device, with the small trained network it uses.
 - `data/`: the chord counts, the chord-to-chord step counts, the colors.
 - `examples/`: three short scores to try.
-- `vendor/`: the two open-source libraries the page uses, with their licenses.
+- `vendor/`: the four open-source libraries the page uses (OpenSheetMusicDisplay, JSZip, PDF.js, ONNX Runtime Web), with their licenses.
 - `CREDITS.md`: sources and licenses.
 
 To look at it on your own computer, serve the folder (for example `python3 -m http.server` inside it) and open
