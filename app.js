@@ -32,7 +32,9 @@
   const emit = (name, detail) => { for (const fn of hooks[name] || []) { try { fn(detail); } catch (e) { console.error(e); } } };
   // the second reading (engine/second.js) is used when it is on the page and its run allows it (data/about.json, "second")
   const secondOn = () => !!(window.CKSecond && state.about.second && state.about.second.show && query.get("second") !== "0");
-  // Switches for checking, none of them stored: ?second=0 and ?studio=0 run the page without that part; ?motion=off, ?glass=off, ?theme=dark|light; ?p=x,y[,phase] holds the pointer for a picture.
+  // where a chord leads (engine/lean.js): used when it is on the page and its run is in data/about.json ("lean"). Without it the page is as it was.
+  const leanOn = () => !!(window.CKLean && state.about.lean && state.about.lean.show && query.get("lean") !== "0");
+  // Switches for checking, none of them stored: ?second=0, ?lean=0 and ?studio=0 run the page without that part; ?motion=off, ?glass=off, ?theme=dark|light; ?p=x,y[,phase] holds the pointer for a picture.
 
   // ------------------------------------------------------------------ reading
   function measureIndexAt(score, t) { let lo = 0, hi = score.measures.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (score.measures[mid].start.le(t)) lo = mid + 1; else hi = mid; } return Math.max(0, lo - 1); }
@@ -244,6 +246,38 @@
       svg.setAttribute("viewBox", vb.x + " " + vb.y + " " + vb.width + " " + to); svg.setAttribute("height", String(h * to / (to - need)));
     } catch (e) { console.error(e); }
   }
+  // Where it leads, on the score: a thin line under an approach of three or more chords, from its first numeral to the one it arrives at, ending in a
+  // small dot of that chord's color. It is drawn into the labels' own group of each system after the last layout pass: so it moves with them, is drawn
+  // again with every drawing, lies below every numeral it passes under, and is counted when the drawing is made taller or cut into systems for paper.
+  function leanLines(host) {
+    try {
+      const L = state.lean, svg = host.querySelector("svg"); if (!L || !svg || !state.about.lean.line) return;
+      const NS = "http://www.w3.org/2000/svg", mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
+      const ink = new Map(), layer = new Map();       // per system: where its numerals' ink ends, and the group the lines go into
+      const inkOf = g => { if (!ink.has(g)) ink.set(g, [...g.querySelectorAll("text")].map(t => { const b = t.getBBox(); return { x: b.x, r: b.x + b.width, b: b.y + b.height * 0.86 }; })); return ink.get(g); };
+      const layerOf = g => { if (!layer.has(g)) { const e = mk("g", { class: "ck-lean", "pointer-events": "none", "aria-hidden": "true" }); g.appendChild(e); layer.set(g, e); } return layer.get(g); };
+      for (const a of L.approaches) {
+        if (!a.drawn) continue;
+        const parts = [];           // one stretch per system the approach crosses
+        for (const i of a.chords) {
+          const t = svg.querySelector('g.ck-labels text[data-i="' + i + '"]'); if (!t) continue;
+          const g = t.parentNode, b = t.getBBox(), last = parts[parts.length - 1];
+          if (last && last.g === g) last.to = b; else parts.push({ g, from: b, to: b, end: false });
+          if (i === a.arrival) { parts[parts.length - 1].end = true; break; }
+        }
+        const s = state.result.spans[a.arrival], hex = (s && s.hex) || hexOf(s && s.family, s && s.seventh);
+        parts.forEach((p, k) => {
+          const x0 = p.from.x - (k ? 10 : 0), x1 = p.end ? p.to.x + Math.min(p.to.width / 2, 8) : p.to.x + p.to.width + 10; let y = 0;
+          for (const b of inkOf(p.g)) if (b.x < x1 && b.r > x0) y = Math.max(y, b.b);
+          y += 4.5;
+          const at = layerOf(p.g);
+          at.appendChild(mk("path", { d: "M" + x0.toFixed(1) + " " + y.toFixed(1) + "H" + x1.toFixed(1), fill: "none", stroke: "#14181F", "stroke-opacity": ".4", "stroke-width": "1.1", "stroke-linecap": "round",
+            "data-fam": (s && s.family) || "unknown" }));       // with one family alone on the score, a line steps back or stays with the chord it arrives at
+          if (p.end) at.appendChild(mk("circle", { cx: x1.toFixed(1), cy: y.toFixed(1), r: "2.7", fill: hex }));
+        });
+      }
+    } catch (e) { console.error(e); }
+  }
   let lastW = 0;            // the width the score was last drawn for: a resize draws it again only when this has changed
   async function draw() {
     const token = ++state.token, host = $("score");
@@ -254,6 +288,13 @@
     state.readings = null; state.walk = {};
     if (harm && secondOn()) {       // the second reading, by rule: read after any correction is on the spans; it changes nothing in them
       try { state.readings = window.CKSecond.read(state.score, state.result, state.lang, { collection: !!state.about.second.collection }); } catch (e) { console.error(e); state.readings = null; }
+    }
+    state.lean = null;
+    if (harm && leanOn()) {         // where each chord leads: read from the names on the score, after any correction; it changes nothing in them either
+      try {
+        state.leanCounts = state.leanCounts || new window.CKLean.StepCounts(state.prog.model.bi);
+        state.lean = window.CKLean.read(state.score, state.result, state.lang, { counts: state.leanCounts, second: state.readings, hints: state.about.lean.hints || {} });
+      } catch (e) { console.error(e); state.lean = null; }
     }
     if (!state.osmd) {
       state.osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(host, { autoResize: false, backend: "svg", drawTitle: false, drawSubtitle: false, drawComposer: false, drawLyricist: false,
@@ -281,6 +322,7 @@
       R.MinSkyBottomDistBetweenSystems += Math.ceil(res.layout.need / 10) + 0.5;
       osmd.render(); res = over(); staves = OV.staffOverlaps(osmd);
     }
+    leanLines(host);
     roomBelow(host);
     state.xmlShown = xml; state.layout = res ? res.layout : null; state.staves = staves; state.report = harm ? colored.report : null; state.pitch = pitch;
     tagFamilies(); numeralButtons(); solo(state.pinned);
@@ -289,6 +331,7 @@
     const both = !!state.readings, mine = !!Studio, act = touchOnly() ? "Tap" : "Click";
     $("hint").textContent = !harm ? "Pitch Color: every note name has its own color, the same in every key."
       : act + (both ? " a Roman numeral to see both readings of that chord" : " a Roman numeral to see why that chord was read that way") + (mine ? ", or to change it." : ".")
+        + (state.lean && state.lean.summary.approaches && state.about.lean.line ? " A thin line under the names marks an approach; the dot is where it arrives." : "")
         + (state.opened && state.name === "chopin" ? " This is Chopin's Prelude in C minor, already colored." : "");
     setTimeout(() => {      // read the colored score back and compare it with the original
       if (token !== state.token) return;
@@ -327,6 +370,10 @@
             .replace(/(\d+ bars? fits? one symmetrical scale)/, '<button class="link" id="barsNext" type="button">$1</button>') + (own ? ", with your color table" : "") + "</span>");
         }
       }
+      if (state.lean && state.lean.summary.text) {      // where it leads in one phrase: the approaches the score draws; it walks through the chords they arrive at
+        state.leanAt = state.lean.summary.at || [];
+        facts.push('<span class="leadsto"><i class="leadmark" aria-hidden="true"></i>' + esc(state.lean.summary.text).replace(/^(\d+ approach(?:es)?(?: to the tonic)?)/, '<button class="link" id="leanNext" type="button">$1</button>') + "</span>");
+      }
     }
     const lay = state.layout, touching = lay && !lay.error ? lay.labelsTouching + lay.labelsOverlapping + (state.staves ? state.staves.overlaps : 0) : 0;
     if (touching) facts.push(touching + " place" + (touching === 1 ? "" : "s") + " where print overlaps");
@@ -341,7 +388,7 @@
     else if (!harm && state.pitch) $("legend").innerHTML = state.lang.pitch.names.map((n, i) => state.pitch.counts[i] ? chip("p" + i, state.lang.pitch.colors[i], n) : "").join("");
   }
   function walk(name) {     // "different on 3": each click goes to the next of those chords and opens its card
-    const list = name === "bars" ? state.barsAt : state.differAt; if (!list || !list.length) return;
+    const list = name === "bars" ? state.barsAt : name === "lean" ? state.leanAt : state.differAt; if (!list || !list.length) return;
     const at = state.walk[name] = ((state.walk[name] === undefined ? -1 : state.walk[name]) + 1) % list.length;
     const el = $("score").querySelector('text[data-i="' + list[at] + '"]'); if (!el) return;
     const sheet = $("sheet"), sr = sheet.getBoundingClientRect(), r0 = el.getBoundingClientRect();
@@ -370,6 +417,9 @@
     const fam = state.lang.families.find(f => f.id === s.family) || state.lang.unknown, ev = s.evidence || {}, hex = s.hex || fam.triad;
     const rd = state.readings ? state.readings[i] : null, rule = rd && rd.relation && rd.rule ? rd.rule : null;       // the second reading of this chord, when there is one
     const shown = s.textOverride ? written(s.textOverride) : s.label ? text(s.label) : "?", bar = barOf(state.score, s.start);
+    // where this chord leads, when the page reads that (engine/lean.js): a third short row under the readings, and its count for the fold
+    const ld = state.lean && state.lean.records[i] && state.lean.records[i].live ? state.lean.records[i] : null;
+    const leads = ld && ld.sentences.length ? `<div class="leads"><h4>Where it leads</h4>${ld.sentences.map(t => "<p>" + esc(t) + "</p>").join("")}</div>` : "";
     // the first reading, from examples: its first sentence, then the rest
     let first; const rest = [];
     if (!s.label) first = "These notes, and anything close to them, are not among the chords it knows. So it gives no reading.";
@@ -400,11 +450,11 @@
         + `<section class="reading"><h4>Second reading <span>by rule</span></h4>${rule.kind === "chord" ? name(rule.hex || state.lang.unknown.triad, rule.text, rule.familyName || "") : '<p class="r-name none">no chord</p>'}`
         + (rule.sentences || []).map(t => "<p>" + esc(t) + "</p>").join("")
         + (rule.where ? `<p class="from">Read from ${esc(rule.where.text || ("bar " + rule.where.bar + ", beat " + rule.where.beat))}: notes ${esc(rule.where.notes)}.</p>` : "") + `</section></div>`
-        + `<p class="verdict"><i class="pairmark${joined ? "" : " differ"}" aria-hidden="true"></i><span><b>${esc(rd.chip)}.</b>${rd.verdict ? " " + esc(rd.verdict) : ""}</span></p>`;
-    } else html += [first].concat(rest).map(l => "<p>" + l + "</p>").join("");
+        + `<p class="verdict"><i class="pairmark${joined ? "" : " differ"}" aria-hidden="true"></i><span><b>${esc(rd.chip)}.</b>${rd.verdict ? " " + esc(rd.verdict) : ""}${ld && ld.hint ? " " + esc(ld.hint) : ""}</span></p>` + leads;
+    } else html += [first].concat(rest).map(l => "<p>" + l + "</p>").join("") + leads + (ld && ld.more ? `<details><summary>More about where it leads</summary><div><p>${esc(ld.more)}</p></div></details>` : "");
     const extra = rd ? (rule ? rd.more || [] : []).map(esc).concat(rd.bar ? ["<b>The bar.</b> " + esc(rd.bar.sentence)] : []) : [];
     if (extra.length) html += `<div class="extra">${extra.map(x => "<p>" + x + "</p>").join("")}</div>`;
-    if (rule) html += `<details><summary>More about the first reading</summary><div>${rest.map(l => "<p>" + l + "</p>").join("") || "<p>No other reading of these notes was counted.</p>"}</div></details>`
+    if (rule) html += `<details><summary>More about the first reading</summary><div>${rest.map(l => "<p>" + l + "</p>").join("") || "<p>No other reading of these notes was counted.</p>"}${ld && ld.more ? "<p><b>Where it leads.</b> " + esc(ld.more) + "</p>" : ""}</div></details>`
       + `<p class="shared">${esc(window.CKSecond.SHARED_LINE || "Both readings use the key the page found. If the key is wrong, both are wrong together.")}</p>`;      // always in sight, at the foot
     const box = document.createElement("div"); box.className = "why glass thick" + (rule ? "" : " one"); box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true"); box.setAttribute("tabindex", "-1");
     box.setAttribute("aria-label", rule ? "The two readings of this chord" : "Why this chord was read this way"); box.dataset.i = String(i); box.innerHTML = html;
@@ -760,7 +810,7 @@
   $("save").addEventListener("click", save);
   $("print").addEventListener("click", () => window.print());
   $("keys").addEventListener("click", e => { const b = e.target.closest("button[data-bar]"); if (b) goToBar(+b.dataset.bar); });
-  $("facts").addEventListener("click", e => { const b = e.target.closest ? e.target.closest("#differNext, #barsNext") : null; if (b) { e.stopPropagation(); walk(b.id === "barsNext" ? "bars" : "differ"); } });
+  $("facts").addEventListener("click", e => { const b = e.target.closest ? e.target.closest("#differNext, #barsNext, #leanNext") : null; if (b) { e.stopPropagation(); walk(b.id === "barsNext" ? "bars" : b.id === "leanNext" ? "lean" : "differ"); } });
   $("legend").addEventListener("pointerover", e => { const b = e.target.closest("button.chip"); if (b && e.pointerType !== "touch") { solo(b.dataset.k); Field.point(b.dataset.hex); } });
   $("legend").addEventListener("pointerleave", () => { solo(state.pinned); Field.point(null); });
   $("legend").addEventListener("focusin", e => { const b = e.target.closest("button.chip"); if (b) solo(b.dataset.k); });

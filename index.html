@@ -71,7 +71,7 @@
           </g>
         </svg></span>
         <span id="dropSub">or click to choose one (.musicxml, .xml, .mxl). It stays on your device.</span>
-        <template id="dropSubAll"><abbr title="MusicXML is the file a notation program saves for other programs to read. MuseScore, Dorico, Sibelius and Finale can all export one.">MusicXML</abbr>, a PDF, or a picture of printed music. It stays on your device. A MusicXML file gets Harmony Color and Pitch Color. A PDF or a picture gets Pitch Color only.</template>
+        <template id="dropSubAll"><abbr title="MusicXML is the file a notation program saves for other programs to read. MuseScore, Dorico, Sibelius and Finale can all export one.">MusicXML</abbr>, a PDF, or a picture of printed music. It stays on your device. A MusicXML file gets Harmony Color and Pitch Color. A PDF or a picture gets Pitch Color, and a draft of Harmony Color.</template>
         <span class="btn solid" aria-hidden="true">Choose a file</span>
         <input type="file" id="file" tabindex="-1" accept=".musicxml,.xml,.mxl,.pdf,.png,.jpg,.jpeg">
       </label>
@@ -230,7 +230,7 @@
     <div class="col">
       <p class="eyebrow">The reasoning</p>
       <h2>How it reasons</h2>
-      <p class="intro">Every piece is read on its own, from its first bar to its last, in six steps. I chose a method I can explain: each name on the score traces back to chords that experts labeled, and a click shows you the count.</p>
+      <p class="intro">Every piece is read on its own, from its first bar to its last, in seven steps. I chose a method I can explain: each name on the score traces back to chords that experts labeled, and a click shows you the count.</p>
       <ol class="steps pane">
         <li>
           <p><b>Find the key.</b> A chord has no role until there is a key to have it in. Around each beat, the page asks which key the notes fit best, starting from the key signature. A new key has to hold for a while before it counts, so one borrowed chord does not move it.</p>
@@ -277,8 +277,18 @@
           </svg>
         </li>
         
+        
         <li>
-          <p><b>Color it.</b> The chord's role gives the color, and the name goes under the staff. The score shows the first reading. Where the second differs, the page says so.</p>
+          <p><b>See where it leads.</b> A chord is not only a name. It leans somewhere: a dominant to the tonic, a chord that prepares the dominant to the dominant, an applied chord to the chord it is aimed at. The page says where each chord leans, and whether the next chord is that place. Three or more chords that each arrive at the next are an approach.</p>
+          <svg viewBox="0 0 120 64" aria-hidden="true">
+            <g class="g-num" font-size="21" fill="currentColor" text-anchor="middle"><text x="17" y="34">ii6</text><text x="62" y="34">V7</text><text x="106" y="34">I</text></g>
+            <path d="M3 47H106" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" opacity=".5"/>
+            <circle cx="106" cy="47" r="4.2" fill="var(--c-tonic)"/>
+          </svg>
+        </li>
+        
+        <li>
+          <p><b>Color it.</b> The chord's role gives the color, and the name goes under the staff. The score shows the first reading. Where the second differs, the page says so. A thin line under the names marks an approach, with a dot where it arrives.</p>
           <svg viewBox="0 0 120 64" aria-hidden="true">
             <g stroke="currentColor" opacity=".3"><path d="M4 12H116M4 20H116M4 28H116M4 36H116M4 44H116"/></g>
             <g fill="var(--c-subdominant)"><ellipse cx="22" cy="40" rx="5.4" ry="3.9" transform="rotate(-20 22 40)"/><ellipse cx="22" cy="32" rx="5.4" ry="3.9" transform="rotate(-20 22 32)"/><ellipse cx="22" cy="24" rx="5.4" ry="3.9" transform="rotate(-20 22 24)"/></g>
@@ -329,7 +339,9 @@
             <li>Color each note by its pitch, on the page itself.</li>
           </ol>
           <p>Point at a note and the page gives its reason, for example: "G3: a notehead on space 4 (from the bottom), bass clef, 1 flat in the key signature. Natural because of an accidental earlier in the same bar, which still holds."</p>
-          <p>It does not read rhythm yet. Harmony Color needs to know which notes sound together and for how long, so a picture gets Pitch Color only.</p>
+          
+          <p>It does not read note values yet, so Harmony Color from a picture is a draft made from the layout of the page. Notes that stand in one upright line sound together. A bar runs from barline to barline. Inside a bar, time runs with the distance along the staff, and the beats are laid over it. The number of beats comes from the time signature when the page shows one, and you can set it yourself. The same analyzer then reads this sketch as it reads a file.</p>
+          
         </div>
       </details>
     </div>
@@ -370,6 +382,9 @@
           <details><summary>How it was counted</summary><div class="more">
             <p>Counted on 86,546 notes of scanned piano music. A line here is one system: both hands across the page. None of it was used to teach the reader, and I read the result once, after the reader was fixed. Of the notes it colored, 92.5% were right, so a colored page also holds some notes that are wrong or not there.</p>
             <p>On pages printed for the test (8 movements, each in four music fonts) it read 99.3% of the notes in the one test font it had also learned from (it learned from five), 99.0% and 98.2% in two it had never seen, and 74.1% in a third unseen font, one that imitates handwriting, where it found the treble clef in 17 of 771 places. One of those movements had already been used while I developed the reader. Its errors on scans are notes it adds or misses, key signatures undercounted on crowded old engravings, octave signs, which it does not read, and notes far above or below the staff.</p>
+            
+            <p>Harmony Color from a picture is a draft, and I measured it on the same printed test pages (697 pages), once, after it was fixed. 78.0% of 94,812 noteheads took the same color family as when the page read the file itself; by music font, 62.4% to 84.4%. Against the expert, the picture's reading had the right color for 65.5% of those notes and the file's reading for 70.4%. The time signature was read on 19 of 32 first pages, and every one it read was right; where it read none, the page judged the beats from the layout. The movement that changes meter after its first line came out worst (Beethoven's Op. 132, first movement, 66.5%), because the page reads the time signature once. Afterwards I repaired one fault found on a page of my own (the numbers of a time signature had been taken for faint notes) and read the test pages a second time: the figure stayed 78.0%, and the time signature was then read on 20 of the 32 first pages. I have not measured this on scans or photos, or on music outside Mozart and Beethoven.</p>
+            
           </div></details>
         </article>
         
@@ -383,7 +398,7 @@
           
           <p class="fine">Both readings use the same key, the same chord boundaries and the same note spelling. If the key is wrong, both are wrong together.</p>
           <details><summary>How it was counted</summary><div class="more">
-            <p>The readings differed for 15.7% of the music, and there the rule's color was the expert's 32.7% of the time. For the rest (15.3% of the music) the two were not compared: the rules gave no chord, the lowest note was not part of the rule's chord, or the first reading gave none. There the color on the page was the expert's 55.1% of the time.</p>
+            <p>The readings differed for 15.7% of the music, and there the rule's color, counted moment by moment, was the expert's 32.7% of the time (the one rule reading the card shows for a chord: 21.7%). For the rest (15.3% of the music) the two were not compared: the rules gave no chord, the lowest note was not part of the rule's chord, or the first reading gave none. There the color on the page was the expert's 55.1% of the time.</p>
             <p>On 25 further movements, which earlier work had already examined, the readings agreed for 67.2% of the music; the color was the expert's 79.1% of the time where they agreed and 49.9% where they differed.</p>
             <p>The two readings share the key, so none of this says anything about wrong keys. Of the music where they agreed, 14.8% was read in a key the expert did not write. These are Mozart and Beethoven movements, the composers the first reading learned from, and its settings were chosen on these same movements. Other music will give other figures.</p>
           </div></details>
@@ -394,9 +409,23 @@
       <details class="fold">
         <summary>One more: it says when it is unsure</summary>
         <div class="more">
-          <p>On the same 163 tonal pieces, 17.5% of the music carried a question mark or stayed gray. On Messiaen's eight Préludes, which rest on his modes more than on tonic and dominant, it was 57.1% to 90.5% of each piece. Many question marks are the page telling you the music lies outside what it knows. The marks are not complete: some chords there still pass without one. Measured with steps 1 to 3. The Préludes were read by machine from a scan of the printed score, and some wrong notes remain.</p>
+          <p>On the same 163 tonal pieces, 17.5% of the music carried a question mark or stayed gray. Many question marks are the page telling you the music lies outside what it knows: music that is not built on a tonic and a dominant should not be read in these colors at all. The marks are not complete: some chords still pass without one. Measured with steps 1 to 3.</p>
         </div>
       </details>
+      
+      
+      <details class="fold">
+        <summary>One more: where a chord leads</summary>
+        <div class="more">
+          <p>A lean is a tendency, not a law. Counted on 24 Mozart and Beethoven movements, the ones I used to set step 4: in the experts' own analyses, a dominant went on to the tonic for 76.7% of its time, a chord that prepares the dominant went on to the dominant for 51.8%, and an applied chord reached the chord it was aimed at for 73.3%.</p>
+          <p>The page reads the direction from its own chord names, so the direction is only as good as the names. Where the page says a chord arrives, the experts' analysis also has an arriving chord for 79.9% of that music. Of the 427 approaches it would draw there, 63.2% end where an approach in the experts' analysis also ends.</p>
+          <p>I also asked whether the direction tells which reading to trust where the two differ. Mostly it does not. Where only the second reading's lean arrives at the next chord, the first reading was still the expert's color more often (44.0% against 33.8% of that music). One thing held in every composition: where the chord before leans to the first reading and not to the second, the first reading was the expert's color for 65.9% of the music, against 54.0% over all the music where they differ. The card says so in those places, and nowhere else.</p>
+          <p>An approach is not a cadence. In the 9 Mozart movements among these, where experts marked the cadences, 92.5% of the perfect, imperfect and evaded cadences stand on a tonic chord where the page finds an arrival. But only 36.1% of the approaches to the tonic it would draw end at one of them.</p>
+          <p>On 25 further movements, which earlier work had already examined, these figures are 77.0% for a chord said to arrive, 57.9% for the approaches, 59.5% against 49.9% where the chord before leans to the first reading only, and 32.2% for approaches that end at a marked cadence. These are Mozart and Beethoven. Other music will give other figures.</p>
+        </div>
+      </details>
+      
+      
       <p class="closing">None of these figures says that color helps anyone learn. I have not tested that.</p>
     </div>
   </section>
@@ -411,7 +440,8 @@
         <div><dt>It knows the Classical style best.</dt><dd>Its examples are Mozart and Beethoven. In later or freer music, many question marks are the page telling you the music lies outside what it knows.</dd></div>
         <div><dt>A question mark is a hint, not a guarantee.</dt><dd>Unmarked readings can be wrong too.</dd></div>
         <div><dt>A wrong key spoils what follows.</dt><dd>The colors after it are wrong with it. Both readings count from the same key, so they can agree and still be wrong.</dd></div>
-        <div><dt>Printed pages are read less surely than files.</dt><dd>The reader does not read rhythm or octave signs, and it can miscount a key signature on a crowded old engraving. I have not tested photos taken with a camera.</dd></div>
+        <div><dt>Where it leads follows the chord names.</dt><dd>If a name or the key is wrong, its direction is wrong with it. The page does not follow a lean across a change of key. And an approach is a row of chord names, not a cadence: it knows nothing of phrase, rhythm or melody.</dd></div>
+        <div><dt>Printed pages are read less surely than files.</dt><dd>The reader does not read note values or octave signs, and it can miscount a key signature on a crowded old engraving. Harmony Color from a picture is a draft made from where the notes stand, not from how long they last. I have not tested photos taken with a camera.</dd></div>
         <div><dt>The colors are a choice.</dt><dd>For some kinds of color vision the green and the red are hard to tell apart. The Roman numeral is always there as a second cue, and the colors can be changed.</dd></div>
         <div><dt>Whether colors help someone learn has not been tested.</dt><dd>That is the hope behind the project, not a result.</dd></div>
       </dl>
@@ -427,12 +457,14 @@
         <div>
           <h3>Read more</h3>
           <ul>
-            <li><b>Harmony Color from a picture.</b><span class="tag">Not built</span><span>The reader would first have to read rhythm.</span>
-              <details><summary>More</summary><div class="more"><p>Flags, beams, dots, rests and time signatures. With them a picture could become a full score, and its harmony could be read like any other.</p></div></details></li>
+            
+            <li><b>Note values from a picture.</b><span class="tag">Not built</span><span>Today Harmony Color from a picture is a draft made from the layout. Reading flags, beams, dots and rests would make it exact.</span>
+              <details><summary>More</summary><div class="more"><p>With them a picture could become a full score, a MusicXML file, and its harmony could be read like any other. A change of meter in the middle of a piece would be read too.</p></div></details></li>
+            
             <li><b>More music than Mozart and Beethoven.</b><span class="tag">Collected, not counted</span><span>Expert analyses of Romantic piano music exist in the same annotation standard as the ones I counted.</span>
               <details><summary>More</summary><div class="more"><p>Chopin's mazurkas, Grieg's Lyric Pieces, Liszt, Schumann, Tchaikovsky. Counting them in might help with later music. I will not know until it is tested, and that needs a new test, fixed in advance.</p></div></details></li>
-            <li><b>Colors for music outside a key.</b><span class="tag">An idea</span><span>Messiaen described colors for his own modes. A second color language for such music is possible.</span>
-              <details><summary>More</summary><div class="more"><p>The colors here describe roles in a key, and some music has no tonic and dominant to color. A language for it would be kept apart from this one. Whose colors it should use is an open question.</p></div></details></li>
+            <li><b>A color language built on scales.</b><span class="tag">An idea</span><span>Messiaen's colors follow his scales, not a chord's role in a key. Music like his needs a second language, built on that model.</span>
+              <details><summary>More</summary><div class="more"><p>The colors here describe roles in a key, and some music has no tonic and dominant to color. In Messiaen's music each of his modes, in each of its transpositions, has its own colors, and so do particular chords. A language for such music would be kept apart from this one, and I would build it only when its model is certain.</p></div></details></li>
             <li><b>Correcting more than a chord.</b><span class="tag">Not built</span><span>You cannot yet correct the key of a passage or move the place where a chord changes, and a wrong key spoils the colors after it.</span></li>
           </ul>
         </div>
@@ -518,6 +550,7 @@
 <script src="engine/colorkey.js"></script>
 <script src="engine/overlay.js"></script>
 <script src="engine/second.js"></script>
+<script src="engine/lean.js"></script>
 <script src="reader/ui.js"></script>
 <script src="studio.js"></script>
 <script src="app.js"></script>

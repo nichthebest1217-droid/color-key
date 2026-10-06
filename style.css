@@ -309,6 +309,17 @@ body.dragging .veil { display: grid; }
 .why details > div { padding: 0 0 10px; color: var(--ink-2); }
 .why details p + p { margin-top: 6px; }
 .why .shared { padding-top: 9px; border-top: 1px solid var(--hair); font-size: 12.5px; color: var(--ink-3); }
+/* where it leads (engine/lean.js): the third row of the card, and the mark of its phrase in the facts line, a line that ends in a dot as under the score */
+.why .leads { padding: 10px 0; border-top: 1px solid var(--hair); color: var(--ink-2); }
+.why .leads h4 { font-size: 14px; font-weight: 600; color: var(--ink); }
+.why .leads p { margin-top: 3px; }
+.why.one > .leads { margin-top: 10px; }
+.leadmark { display: inline-block; position: relative; width: 20px; height: 10px; margin-right: 6px; flex: none; vertical-align: -1px; }
+.leadmark::before { content: ""; position: absolute; left: 0; right: 5px; top: 4.5px; height: 1px; background: currentColor; opacity: .55; }
+.leadmark::after { content: ""; position: absolute; right: 0; top: 2px; width: 6px; height: 6px; border-radius: 50%; background: var(--c-tonic, currentColor); }
+@media (pointer: coarse) { #leanNext { padding: 7px 0; margin: -7px 0; } }
+@media (forced-colors: active) { .leadmark { forced-color-adjust: none; } }
+@media print { .leadmark::before, .leadmark::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 .change-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
 .change-row label { font-size: 12.5px; color: var(--ink-3); flex-basis: 100%; }
 select.field-in { padding-right: 6px; }
@@ -589,3 +600,11 @@ footer.col::before { content: ""; flex-basis: 100%; border-top: 1px solid var(--
   .omr-page canvas { width: auto; max-width: 100%; max-height: 8.4in; margin: 0 auto; mix-blend-mode: normal; }
   .omr-page figcaption { color: #444; }
 }
+
+/* printed music: the beats-in-a-bar choice of Harmony Color from a picture */
+.omr-beats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 13.5px; color: var(--ink-2); }
+.omr-beats button { min-width: 30px; height: 28px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--hair-2); background: var(--btn); color: inherit; font: inherit; cursor: pointer; }
+.omr-beats button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.omr-beats button.auto { text-decoration: underline; border-color: transparent; background: transparent; padding: 0 4px; }
+.omr-beats .how { color: var(--ink-3); }
+@media (hover: none) { .omr-beats button { min-width: 40px; height: 40px; } }

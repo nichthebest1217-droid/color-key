@@ -8,7 +8,8 @@ This folder is the whole site: plain files, no build step, no server code. Any s
 - `studio.js`: "Make it yours". A visitor's own colors, names and readings, kept in the visitor's browser and nowhere else.
   Without this file the page works as published.
 - `engine/`: reads the score, finds the keys and chords, colors the notes (`colorkey.js`), writes the numerals under the staff
-  (`overlay.js`), and reads each chord a second time by rule (`second.js`).
+  (`overlay.js`), reads each chord a second time by rule (`second.js`), and says where each chord leads (`lean.js`).
+  Without `second.js` or `lean.js` the page works without that part.
 - `reader/`: reads printed music from a PDF or a picture, on the visitor's device, with the small trained network it uses.
 - `data/`: the chord counts, the chord-to-chord step counts, the colors (`language.json`), and the other color sets a
   visitor can choose (`palettes.json`).
