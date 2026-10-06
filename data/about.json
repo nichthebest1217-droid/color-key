@@ -14,5 +14,21 @@
   "script_wording": 2,
   "equality_record": "js_equality_after_review.json"
  },
+ "lean": {
+  "version": "1.0.0",
+  "run": "p10-20261005a",
+  "show": true,
+  "line": true,
+  "wording": "hints",
+  "hints": {
+   "forward_second": false,
+   "forward_first": false,
+   "backward_second": false,
+   "backward_first": true
+  },
+  "script_sha256": "8547ef888d56160a5608422d384dad4ed10571c22459a3afe5bdc6d26bd6f11e",
+  "script_wording": 1,
+  "equality_record": "js_equality.json"
+ },
  "palettes": true
 }
