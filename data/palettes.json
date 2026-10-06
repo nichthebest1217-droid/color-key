@@ -1,0 +1,125 @@
+{
+ "name": "Color Key color sets",
+ "version": "1.0",
+ "note": "The sets a visitor can choose under \"Make it yours\", besides the reference colors. The reference colors are data/language.json and have no entry here, so the agreed hues stay in one place. Each set gives every family its two shades (three-note chord, seventh chord), the gray of a chord with no reading, and the twelve note colors of Pitch Color, from C upward.",
+ "sets": [
+  {
+   "id": "soft",
+   "name": "Soft",
+   "say": "The same hues with less saturation. Not the set for red-green color vision.",
+   "source": "Derived from the reference colors by calculation: every hue kept, saturation held under a ceiling, lightness moved a little to keep the families apart.",
+   "families": {
+    "tonic": [
+     "#4D9A52",
+     "#185A2C"
+    ],
+    "dominant": [
+     "#AC4B3F",
+     "#662025"
+    ],
+    "subdominant": [
+     "#456CBA",
+     "#1B2E65"
+    ],
+    "supertonic": [
+     "#A78EDD",
+     "#574988"
+    ],
+    "neapolitan": [
+     "#8B59A8",
+     "#4B1F52"
+    ],
+    "submediant": [
+     "#D6AA41",
+     "#897222"
+    ],
+    "mediant": [
+     "#0E9294",
+     "#016675"
+    ],
+    "subtonic": [
+     "#D27A44",
+     "#7E4413"
+    ],
+    "applied": [
+     "#D07099",
+     "#87476E"
+    ]
+   },
+   "unknown": "#9A9A9A",
+   "pitch": [
+    "#C56061",
+    "#D87954",
+    "#E5A24A",
+    "#A68F13",
+    "#84B258",
+    "#3D8D48",
+    "#1BA579",
+    "#24A1B7",
+    "#458BD3",
+    "#536EBF",
+    "#6255A9",
+    "#9D3D57"
+   ]
+  },
+  {
+   "id": "cvd",
+   "name": "Red-green",
+   "say": "For red-green color vision. Tuned by simulation, and not yet tried with color-blind readers.",
+   "source": "The nine families are the candidate of the project's color-vision search (decision D040, run palette-cvd-20260922), not adopted as the reference. The twelve note colors were searched for with the same measure.",
+   "families": {
+    "tonic": [
+     "#3BA76F",
+     "#336D52"
+    ],
+    "dominant": [
+     "#BB0E3A",
+     "#74132F"
+    ],
+    "subdominant": [
+     "#0B63FF",
+     "#18328A"
+    ],
+    "supertonic": [
+     "#9A88E2",
+     "#5C2ACA"
+    ],
+    "neapolitan": [
+     "#933CAF",
+     "#5D1959"
+    ],
+    "submediant": [
+     "#C5892B",
+     "#5C4F19"
+    ],
+    "mediant": [
+     "#01959A",
+     "#136377"
+    ],
+    "subtonic": [
+     "#C24900",
+     "#5B2500"
+    ],
+    "applied": [
+     "#FF39A4",
+     "#9D2169"
+    ]
+   },
+   "unknown": "#79827C",
+   "pitch": [
+    "#B63D5B",
+    "#9D0600",
+    "#BA8900",
+    "#916F17",
+    "#6FA25C",
+    "#286030",
+    "#519C8B",
+    "#579DB7",
+    "#0A76AC",
+    "#6589FE",
+    "#3D21D7",
+    "#9F005E"
+   ]
+  }
+ ]
+}

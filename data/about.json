@@ -13,5 +13,6 @@
   "script_sha256": "af146e8d3d40b13f9a63c898ad01f18e1a7888f6f853e9b9a0f69c5d949d9c61",
   "script_wording": 2,
   "equality_record": "js_equality_after_review.json"
- }
+ },
+ "palettes": true
 }
