@@ -22,9 +22,11 @@
   const HEX = /^#[0-9a-f]{6}$/i;
   const INPUT = /^(major|minor)\|\{(\d[+-]\d+(,\d[+-]\d+)*)?\}\|(NO_BASS_AT_START|\d[+-]\d+)$/;      // the engine's name for "these notes over this bass, in this kind of key"
   const PIECE = /^n\d{1,7}-[0-9a-f]{1,8}$/, START = /^\d{1,9}\/\d{1,6}$/, SET = /^[a-z][a-z0-9-]{0,23}$/;
+  const LABEL = /^[A-Za-z0-9#+,\-\/:;=?]{1,120}$/;        // the engine's own name for a chord ("root=5+0;rpc=7;q=Mm7;inv=0;..."): it is carried along and never shown, and still nothing else is let through
   // a name or a chord is short plain text: letters, digits, spaces and the few marks music uses. Anything else is refused.
+  // A letter may carry marks of its own (\p{M}): the vowel signs of Devanagari or Thai, the points of Arabic, an accent typed apart from its letter.
   // (Built from strings: a browser too old to know "any letter" then takes the Latin letters, where a pattern written out would stop this whole file.)
-  const pattern = (more, a, z) => { try { return new RegExp("^[\\p{L}\\p{N}" + more + "]{" + a + "," + z + "}$", "u"); } catch (e) { return new RegExp("^[A-Za-z0-9\\u00C0-\\u024F" + more + "]{" + a + "," + z + "}$"); } };
+  const pattern = (more, a, z) => { try { return new RegExp("^[\\p{L}\\p{M}\\p{N}" + more + "]{" + a + "," + z + "}$", "u"); } catch (e) { return new RegExp("^[A-Za-z0-9\\u00C0-\\u024F" + more + "]{" + a + "," + z + "}$"); } };
   const PLAIN = pattern(" .,'’·:\\-–()♭♯°ø+/#?", 1, 24), TITLE = pattern(" .,'’·:;&\\-–()♭♯#/", 0, 80), BAR = pattern(" .\\-", 0, 12);
   const clone = o => JSON.parse(JSON.stringify(o));
   const has = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
@@ -40,7 +42,7 @@
 
   const blank = () => ({ v: 1, palette: "reference", families: {}, pitch: null, unknown: null, taught: {}, pieces: {} });
   let S = blank(), base = null, sets = {}, order = ["reference"], dict = null, ids = [], REV = null;
-  let kept = true, frozen = false;       // kept: this browser stores what is changed. frozen: another version's object is in the store and is left alone.
+  let kept = true, frozen = false;       // kept: this browser stores what is changed. frozen: a later version's object is in the store and is left alone.
   let visit = false;                     // a set named in the address (?palette=) is shown and not stored, until the visitor changes something
   const listeners = [];
 
@@ -48,7 +50,7 @@
   function tidyReading(x) {        // a reading as stored or as read from a file: nothing but a family, a short text and two flags gets through
     if (!x || typeof x !== "object") return null;
     const family = ids.includes(x.family) || x.family === "unknown" ? x.family : null; if (!family) return null;
-    const out = { text: cleanLabel(x.text), family, seventh: !!x.seventh, label: typeof x.label === "string" ? x.label.slice(0, 200) : null };
+    const out = { text: cleanLabel(x.text), family, seventh: !!x.seventh, label: typeof x.label === "string" && LABEL.test(x.label) ? x.label : null };
     if (x.was && typeof x.was === "object") out.was = { text: cleanLabel(x.was.text), family: ids.includes(x.was.family) ? x.was.family : "unknown", seventh: !!x.was.seventh };
     return out;
   }
@@ -80,13 +82,16 @@
     }
     return out;
   }
+  const oldest = (o, max) => { const ks = Object.keys(o); if (ks.length > max) for (const k of ks.sort((a, b) => (o[a].at || 0) - (o[b].at || 0)).slice(0, ks.length - max)) delete o[k]; };
+  const trim = () => { oldest(S.pieces, MAX_PIECES); oldest(S.taught, MAX_TAUGHT); };        // the least recently touched go first
   function load() {
     try {
       const raw = localStorage.getItem(KEY); frozen = false; kept = true;
       if (raw === null) { S = blank(); return; }
-      const o = JSON.parse(raw);
-      if (!o || typeof o !== "object" || o.v !== 1) { S = blank(); frozen = true; kept = false; return; }       // another version's object: it is left as it is, and this visit keeps nothing
-      S = tidy(o);
+      const o = JSON.parse(raw), whole = !!o && typeof o === "object" && !Array.isArray(o);
+      if (whole && typeof o.v === "number" && o.v > 1) { S = blank(); frozen = true; kept = false; return; }       // a later version's object: it is left as it is, and this visit keeps nothing
+      if (!whole || o.v !== 1) throw new Error("not this layer's object");       // written by no version of this page (null, a list, no version number): a damaged store, replaced at the next change
+      S = tidy(o); trim();           // a store someone else filled is held to the same limits as one this page wrote
     } catch (e) { S = blank(); kept = false; }
   }
   const isEdited = () => S.palette !== "reference" || Object.keys(S.families).length > 0 || !!S.pitch || !!S.unknown;
@@ -94,8 +99,7 @@
   function save() {
     visit = false;
     if (frozen) return;
-    const oldest = (o, max) => { const ks = Object.keys(o); if (ks.length > max) for (const k of ks.sort((a, b) => (o[a].at || 0) - (o[b].at || 0)).slice(0, ks.length - max)) delete o[k]; };
-    oldest(S.pieces, MAX_PIECES); oldest(S.taught, MAX_TAUGHT);        // the least recently touched go first
+    trim();
     try { if (isBlank()) localStorage.removeItem(KEY); else localStorage.setItem(KEY, JSON.stringify(S)); kept = true; } catch (e) { kept = false; }
   }
   function changed(what) { save(); for (const fn of listeners.slice()) { try { fn(what); } catch (e) { console.error(e); } } }
@@ -190,7 +194,7 @@
     let o; try { o = JSON.parse(text); } catch (e) { return { ok: false, why: "not-json" }; }
     if (!o || typeof o !== "object" || !Array.isArray(o.families)) return { ok: false, why: "not-colors" };
     const set = typeof o.palette === "string" && has(sets, o.palette) ? o.palette : "reference", ref = setColors(set);       // the file's colors are kept as differences from the set it names
-    const rep = { ok: true, set, colors: 0, names: 0, pitch: 0, taught: 0, left: { families: 0, assign: false } }, fams = {}, seen = new Set(); let colored = 0;
+    const rep = { ok: true, set, colors: 0, names: 0, pitch: 0, taught: 0, left: { families: 0, assign: false, taught: 0, full: 0 } }, fams = {}, seen = new Set(); let colored = 0;
     for (const f of o.families) {
       if (!f || typeof f !== "object" || !ids.includes(f.id)) { rep.left.families += 1; continue; }
       if (seen.has(f.id)) continue; seen.add(f.id);
@@ -199,8 +203,9 @@
       if (t && t !== up(p[0])) e.triad = t;
       if (s && (e.triad ? s !== deeper(e.triad) : s !== up(p[1]))) e.seventh = s;       // a seventh shade that is the one made from its color stays made from it
       if (e.triad || e.seventh) rep.colors += 1;                          // counted by family: a color and its deeper shade are one
-      const b = baseFamily(f.id), name = cleanName((f.plain && f.plain.en) || (f.term && f.term.en) || f.name);
-      if (name && name.toLowerCase() !== b.plain.en.toLowerCase() && name.toLowerCase() !== b.term.en.toLowerCase()) { e.name = name.charAt(0).toUpperCase() + name.slice(1); rep.names += 1; }
+      const b = baseFamily(f.id), asWritten = !!(f.plain && f.plain.en), name = cleanName((f.plain && f.plain.en) || (f.term && f.term.en) || f.name);
+      // a name this page saved (plain.en) comes back letter for letter; one taken from a term, which is written small, gets its capital
+      if (name && name.toLowerCase() !== b.plain.en.toLowerCase() && name.toLowerCase() !== b.term.en.toLowerCase()) { e.name = asWritten ? name : name.charAt(0).toUpperCase() + name.slice(1); rep.names += 1; }
       if (Object.keys(e).length) fams[f.id] = e;
     }
     if (!colored) return { ok: false, why: "not-colors" };               // not one of the nine families with a color: this is not a colors file, and nothing is taken
@@ -210,10 +215,14 @@
     const un = o.unknown && isHex(o.unknown.triad) ? up(o.unknown.triad) : null;
     if (un && un !== up(ref.unknown)) S.unknown = un;
     if (o.assign) rep.left.assign = true;                                 // which chord takes which family is not read from a file
-    const learned = o.learned && typeof o.learned === "object" ? o.learned : {};
+    // A reading in a file passes the same guard as one taught in the form (canRemember): a file must not teach what the form refuses.
+    // And it is taken only while there is room: what the visitor taught is never pushed out by a file. Both are counted for the line that says what was opened.
+    const learned = o.learned && typeof o.learned === "object" ? o.learned : {}; let room = MAX_TAUGHT - Object.keys(S.taught).length;
     for (const k of Object.keys(learned)) {
       const t = INPUT.test(k) && !has(S.taught, k) ? tidyReading(learned[k]) : null; if (!t || !t.text) continue;
-      delete t.was; t.from = { piece: "", bar: "" }; t.at = Date.now(); S.taught[k] = t; rep.taught += 1;
+      if (!canRemember({ input: k, key: { mode: k.slice(0, k.indexOf("|")) } }, t.text).ok) { rep.left.taught += 1; continue; }
+      if (room < 1) { rep.left.full += 1; continue; }
+      delete t.was; t.from = { piece: "", bar: "" }; t.at = Date.now(); S.taught[k] = t; rep.taught += 1; room -= 1;
     }
     changed("both");
     return rep;
@@ -259,11 +268,20 @@
     }
     const hit = REV[mode] ? REV[mode].get(cleanLabel(text)) : null; return hit ? hit[0] : null;
   }
-  // How many notes of a named chord are among the notes it is named for, in the key the page found? (null: the engine has no table for this chord)
+  // How many notes of a named chord are among the notes it is named for, in the key the page found? (null: the notes of this chord cannot be told from its label)
   const SCALE = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10] };
+  // The engine's table has no row for the three augmented sixths, nor for a chord whose label spells out its third, fifth and seventh ("other:3=m,5=P,7=d").
+  // Their notes are counted here, in semitones above the root the label names, so that the guard holds for them as for every other chord.
+  const AUG6 = { It6: [0, 2, 6], Ger6: [0, 2, 6, 9], Fr6: [0, 4, 6, 10] }, SPELLED = [{ M: 4, m: 3 }, { P: 7, d: 6, A: 8 }, { M: 11, m: 10, d: 9 }];
+  function ownTones(label) {
+    const rpc = /(?:^|;)rpc=(\d+)(?:;|$)/.exec(label), q = (/(?:^|;)q=([^;]*)/.exec(label) || [])[1] || "", o = /^other:3=([^,]*),5=([^,]*),7=([^,]*)$/.exec(q);
+    const above = has(AUG6, q) ? AUG6[q] : o ? [0].concat([1, 2, 3].map(k => { const s = /^\?g\d+s(\d+)$/.exec(o[k]); return s ? +s[1] : has(SPELLED[k - 1], o[k]) ? SPELLED[k - 1][o[k]] : null; }).filter(v => v !== null)) : null;
+    return rpc && above ? above.map(v => (+rpc[1] + v) % 12) : [];
+  }
   function sharedNotes(label, input) {
     const tones = new Set();
     for (let inv = 0; inv < 4; inv++) { const pc = CK.theoreticalBassPc(label.replace(/inv=\d+/, "inv=" + inv)); if (pc !== null) tones.add(pc); }
+    if (!tones.size) for (const pc of ownTones(label)) tones.add(pc);
     if (!tones.size) return null;
     const p = CK.parseInput(input), sounding = new Set(p.feats.map(f => (((SCALE[p.mode][f[0] - 1] + f[1]) % 12) + 12) % 12));
     let n = 0; for (const pc of tones) if (sounding.has(pc)) n += 1;
@@ -301,7 +319,9 @@
     c = c || {};
     const mode = s.key ? s.key.mode : null, was = asRead(s), text = cleanLabel(c.text) || was.text, label = resolveLabel(text, mode);
     const family = ids.includes(c.family) || c.family === "unknown" ? c.family : (label ? CK.familyOf(label, mode) : was.family);
-    const rec = { input: s.input || null, family, seventh: label ? CK.isSeventh(label) : seventhOf(cleanLabel(c.text), was), text, label: label || null, bar: cleanBar(bar), was };
+    // the shade (three notes or a seventh chord): the chord's own while its name is the page's own, since two chords can print alike; otherwise that of the chord named
+    const seventh = text === was.text ? was.seventh : label ? CK.isSeventh(label) : seventhOf(cleanLabel(c.text), was);
+    const rec = { input: s.input || null, family, seventh, text, label: label || null, bar: cleanBar(bar), was };
     let where = "piece", why = null;
     if (c.remember) {
       const can = canRemember(s, text);
@@ -347,10 +367,16 @@
     el.textContent = msg; el.title = msg; el.className = "status";
     setTimeout(() => { if (el.textContent === msg) { el.textContent = ""; el.title = ""; } }, 6000);
   }
-  function armed(btn, again, act) {     // a step that cannot be taken back is asked for twice: the second click, within four seconds, does it
-    if (btn.dataset.armed) { clearTimeout(btn._timer); delete btn.dataset.armed; btn.textContent = btn.dataset.label; act(); return; }
+  // A step that cannot be taken back is asked for twice: the second click does it. The button waits for that click as long as the visitor stays on it,
+  // so nobody has to beat a clock: while the pointer rests on it, or, when it was pressed from the keyboard (a click that counts no press of a pointer:
+  // detail 0, which is also what a tool that presses for the visitor sends), while it keeps the focus. Four seconds after they have left it, it is as it was.
+  function armed(ev, again, act) {
+    const btn = ev.currentTarget, off = () => { clearTimeout(btn._timer); delete btn.dataset.armed; btn.textContent = btn.dataset.label; };
+    if (btn.dataset.armed) { off(); act(); return; }
     btn.dataset.armed = "1"; btn.dataset.label = btn.textContent; btn.textContent = again;
-    btn._timer = setTimeout(() => { delete btn.dataset.armed; btn.textContent = btn.dataset.label; }, 4000);
+    const keys = ev.detail === 0, stays = () => (keys && btn.ownerDocument.activeElement === btn) || btn.matches(":hover");
+    const wait = () => { btn._timer = setTimeout(() => { if (stays()) wait(); else off(); }, 4000); };
+    wait();
   }
   // After each change: lay the readings again, hand the language to the page, write the lists; then, once the score is drawn, say what happened.
   // A change made in the family editor is gentle: the page takes the language without writing the editor again (a color picker that is
@@ -368,7 +394,7 @@
   }
 
   // ---- the sets
-  const SAY_REFERENCE = "The colors the page opens with, worked out with a music-theory teacher.";
+  const SAY_REFERENCE = "The colors the page opens with. Six of the nine families were agreed with a music-theory teacher.";       // as the page says under "About these colors": the other three are proposals
   function drawSets() {
     const host = $("palettes"); if (!host) return;
     if (!host.children.length) {
@@ -407,9 +433,12 @@
   function openedWords(rep) {
     if (!rep.ok) return "This is not a Color Key colors file. Nothing was changed.";
     const got = [rep.set !== "reference" ? "the " + setName(rep.set) + " set" : "", rep.colors ? plural(rep.colors, "color") : "", rep.names ? plural(rep.names, "name") : "", rep.pitch ? "12 note colors" : "", rep.taught ? plural(rep.taught, "reading") : ""].filter(Boolean);
+    const one = n => n === 1;
     return "Opened: " + (got.length ? got.join(", ") : "the reference colors") + "."
       + (rep.left.assign ? " Its table of which chord takes which family was not used." : "")
-      + (rep.left.families ? " " + plural(rep.left.families, "family", "families") + " this page does not have " + (rep.left.families === 1 ? "was" : "were") + " left out." : "");
+      + (rep.left.families ? " " + plural(rep.left.families, "family", "families") + " this page does not have " + (rep.left.families === 1 ? "was" : "were") + " left out." : "")
+      + (rep.left.taught ? " " + plural(rep.left.taught, "reading") + " in it " + (one(rep.left.taught) ? "was" : "were") + " left out: the chord does not fit the notes, or the page has never counted a chord with that name." : "")
+      + (rep.left.full ? " " + plural(rep.left.full, "reading") + " " + (one(rep.left.full) ? "was" : "were") + " left out for lack of room: the page remembers " + MAX_TAUGHT + " at most." : "");
   }
   async function openColors(file) {
     let rep = { ok: false };
@@ -486,6 +515,8 @@
     const n = (ownT && near(f.triad)) || ((ownT || ownS) && near(f.seventh)) || null;
     if (n) out.push("Close to " + n + ". The two may be hard to tell apart.");
     if (ownT && onWhite(f.triad) < 2) out.push("Light on white paper.");
+    // a dark color leaves no room below it: the shade made from it is then the color itself, or nearly
+    if ((ownT || ownS) && apart(f.triad, f.seventh) < 0.09) out.push("The seventh shade is hard to tell from the color. Seventh chords will look like the others.");
     if (ownS && oklab(f.seventh)[0] >= oklab(f.triad)[0]) out.push("The seventh shade is usually the darker one.");
     return out.join(" ");
   }
@@ -648,15 +679,19 @@
     tip(on("langSave", "click", saveColors), "One small file with your colors, your names and the readings you taught. Open it on another device, or give it to a student.");
     tip(on("langOpen", "click", () => { const f = $("langFile"); if (f) f.click(); }), "Takes the colors and names from a file saved here. What you taught stays; readings in the file are added.");
     on("langFile", "change", ev => { const f = ev.target.files && ev.target.files[0]; ev.target.value = ""; if (f) openColors(f); });
-    tip(on("langReset", "click", ev => armed(ev.currentTarget, "Click again to go back", () => {
+    tip(on("langReset", "click", ev => armed(ev, "Click again to go back", () => {
       const n = Object.keys(S.taught).length; resetLanguage();
       langSay("Back to the reference colors and names." + (n ? " What you taught is kept." : "")); const s = $("langSave"); if (s) s.focus();
     })), "Returns to the reference colors and names. What you taught is kept.");
-    on("forgetAll", "click", ev => armed(ev.currentTarget, "Click again to forget", () => {
+    on("forgetAll", "click", ev => armed(ev, "Click again to forget", () => {
       after = () => tell("Every reading is the page's own again."); forgetAll(); after = null;
       const s = $("langSave"); if (s) s.focus({ preventScroll: true });       // the button has gone with what it forgot
     }));
     P.on("analysis", d => { used = apply(d.spans, d.piece.key); drawLists(); });
+    // A picture read from print takes the score's place without an analysis (reader/ui.js hides #result): the piece that was open is then one of the
+    // "other pieces", and "In this piece" must not go on listing it.
+    const stage = $("result");
+    if (stage && window.MutationObserver) new MutationObserver(() => drawLists()).observe(stage, { attributes: true, attributeFilter: ["hidden"] });
     P.on("why", addRows);
     P.on("family", addEditor);
     listeners.push(refresh);

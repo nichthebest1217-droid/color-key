@@ -10,7 +10,9 @@ This folder is the whole site: plain files, no build step, no server code. Any s
 - `engine/`: reads the score, finds the keys and chords, colors the notes (`colorkey.js`), writes the numerals under the staff
   (`overlay.js`), reads each chord a second time by rule (`second.js`), and says where each chord leads (`lean.js`).
   Without `second.js` or `lean.js` the page works without that part.
-- `reader/`: reads printed music from a PDF or a picture, on the visitor's device, with the small trained network it uses.
+- `reader/`: reads printed music from a PDF or a picture, on the visitor's device, with the two small trained networks it
+  uses. One finds the notes (`reader.js`). The other reads what each note and rest is worth (`rhythm.js`), so that the bars
+  can be counted and the harmony read (`harmony.js`). A picture that leans is turned level first (`straighten.js`).
 - `data/`: the chord counts, the chord-to-chord step counts, the colors (`language.json`), and the other color sets a
   visitor can choose (`palettes.json`).
 - `examples/`: three short scores to try.

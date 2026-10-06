@@ -3,7 +3,7 @@
   "use strict";
   const CK = window.ColorKey, OV = window.ColorKeyOverlay, $ = id => document.getElementById(id);
   const query = new URLSearchParams(location.search);
-  const Studio = query.get("studio") === "0" ? null : (window.CKStudio || null);       // the "Make it yours" layer, when the build published it (studio.js)
+  let Studio = query.get("studio") === "0" ? null : (window.CKStudio || null);       // the "Make it yours" layer, when the build published it (studio.js)
   const state = { lang: null, base: null, dict: null, prog: null, examples: [], about: {}, name: "score", meta: {}, piece: null, score: null, result: null, report: null, pitch: null,
                   readings: null, walk: {}, view: "harmony", pinned: null, osmd: null, xmlShown: null, same: null, token: 0, job: 0, ready: false, opened: false };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
@@ -173,7 +173,7 @@
     if (state.view === "harmony") { for (const f of state.lang.families) { by.set(f.triad.toUpperCase(), f.id); by.set(f.seventh.toUpperCase(), f.id); } by.set(state.lang.unknown.triad.toUpperCase(), "unknown"); }
     else state.lang.pitch.colors.forEach((c, i) => by.set(c.toUpperCase(), "p" + i));
     for (const el of $("score").querySelectorAll("svg [fill], svg [stroke]")) {
-      if (el.localName === "tspan") continue;
+      if (el.localName === "tspan" || !el.closest(".vf-stavenote, .vf-stem, .vf-beam, .ck-overlay")) continue;      // notes and the chord names only: a family a visitor painted black must not claim the staff lines, clefs and braces
       const k = by.get((el.getAttribute("fill") || "").toUpperCase()) || by.get((el.getAttribute("stroke") || "").toUpperCase());
       if (k) el.setAttribute("data-fam", k);
     }
@@ -768,9 +768,9 @@
         try {
           const palettes = state.about.palettes ? await get("data/palettes.json") : null;
           Studio.init({ base: lang, palettes, dict: state.dict }); state.lang = Studio.language() || lang;
-        } catch (e) { console.error(e); state.lang = lang; }
+        } catch (e) { console.error(e); state.lang = lang; Studio = null; }           // the layer could not start (its color sets did not arrive): the page goes on without it
       }
-      else for (const el of document.querySelectorAll('#yours, a[href="#yours"]')) el.hidden = true;       // the layer is not running (?studio=0, or its script did not load): its section and the links to it step aside
+      if (!Studio) for (const el of document.querySelectorAll('#yours, a[href="#yours"]')) el.hidden = true;       // the layer is not running (?studio=0, or its script did not load): its section and the links to it step aside
       state.examples = examples; state.ready = true;
       $("foot").textContent = "Version " + about.version + " · " + about.date;
       $("tries").insertAdjacentHTML("beforeend", examples.map(e => `<button class="chip" type="button" data-ex="${esc(e.id)}">${esc(e.short)}</button>`).join(""));

@@ -29,12 +29,22 @@ These two derived files are shared under the same license, CC BY-NC-SA 4.0: attr
 
 **Reading printed music.** The reader (`reader/`) finds the staves, follows each staff through a band of fixed size, and a
 small network marks noteheads, accidentals, clefs, barlines and rests; rules then name each note from the clef, the key
-signature and the accidentals earlier in the bar. The network (`reader/reader.bin`, `reader/reader.onnx`) was trained only
-on pages engraved for this project with MuseScore Studio 4.5.2 (the fonts Leland, Bravura, Emmentaler, Gonville and Finale
-Maestro) from the training part of the two collections above, so it is shared under the same license, CC BY-NC-SA 4.0.
-It was tested on real scans from OLiMPiC 1.0 (Mayer, J., Straka, M., Hajič jr., J., & Pecina, P., 2024, Practical
+signature and the accidentals earlier in the bar. A second small network (`reader/rhythm.onnx`) reads what each notehead
+and rest is worth from its stem, flags, beams and dots, and the bars are counted from those values.
+
+Both networks (`reader/reader.bin`, `reader/reader.onnx`, `reader/rhythm.onnx`) were trained only on pages engraved for
+this project with MuseScore Studio 4.5.2 (the fonts Leland, Bravura, Emmentaler, Gonville and Finale Maestro). The pages
+come from the training part of the two collections above and from seven collections of Romantic piano music, each
+published as "a corpus of annotated scores" under CC BY-NC-SA 4.0: Chopin's Mazurkas, Debussy's Suite bergamasque,
+Liszt's Années de pèlerinage, Medtner's Tales, Schumann's Kinderszenen and Tchaikovsky's The Seasons (Hentschel, J.,
+Rammos, Y., Neuwirth, M., Moss, F. C., & Rohrmeier, M., 2024, An annotated corpus of tonal piano music from the long
+19th century, *Empirical Musicology Review*, 18(1), 84–95), and Rachmaninoff's Variations on a Theme of Corelli, Op. 42
+(Hentschel, J., Rammos, Y., Neuwirth, M., & Rohrmeier, M., a corpus of annotated scores, doi:10.5281/zenodo.14984155). Only the notes were used: the
+analyses were taken out before engraving. The networks are shared under the same license, CC BY-NC-SA 4.0.
+
+The reader was tested on real scans from OLiMPiC 1.0 (Mayer, J., Straka, M., Hajič jr., J., & Pecina, P., 2024, Practical
 end-to-end optical music recognition for pianoform music, ICDAR 2024; CC BY-SA 4.0); no OLiMPiC page was used to train
-it and none is hosted here.
+either network and none is hosted here.
 
 **Privacy.** The site has no account, no tracking and no analytics, and it calls no outside service. A score opened on
 the page is read in the browser and is never uploaded.
