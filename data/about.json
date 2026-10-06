@@ -1,7 +1,17 @@
 {
  "version": "1.0",
- "date": "2026-10-04",
+ "date": "2026-10-05",
  "engine": "3.0.0",
  "dictionary_chords": 34803,
- "steps": 39677
+ "steps": 39677,
+ "second": {
+  "version": "1.0.0",
+  "run": "p9-20261005a",
+  "show": true,
+  "wording": "gap",
+  "collection": false,
+  "script_sha256": "af146e8d3d40b13f9a63c898ad01f18e1a7888f6f853e9b9a0f69c5d949d9c61",
+  "script_wording": 2,
+  "equality_record": "js_equality_after_review.json"
+ }
 }

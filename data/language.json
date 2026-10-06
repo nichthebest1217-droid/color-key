@@ -91,6 +91,9 @@
    },
    "short": {
     "en": "close to home; where a deceptive cadence lands"
+   },
+   "gloss": {
+    "en": "close to home; where the dominant lands when it avoids the tonic (a deceptive cadence)"
    }
   },
   {
@@ -136,6 +139,9 @@
    },
    "short": {
     "en": "a dominant aimed at a chord other than the tonic"
+   },
+   "gloss": {
+    "en": "a dominant aimed at a chord other than the tonic, as if that chord were home for a moment"
    }
   }
  ],
