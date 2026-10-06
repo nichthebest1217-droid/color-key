@@ -6,7 +6,7 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const SEMIS = [0, 2, 4, 5, 7, 9, 11], LETTERS = "CDEFGAB";
   const ACC = { "1": "♯", "-1": "♭", "2": "𝄪", "-2": "𝄫", "0": "" };
-  const state = { net: null, pages: [], names: false, file: "", job: null, lang: null, token: 0, view: "pitch", harmony: null, beats: null, meterTpl: null };
+  const state = { net: null, pages: [], names: false, file: "", job: null, lang: null, token: 0, view: "pitch", harmony: null, beats: null, meterTpl: null, rhythm: null };
   const mq = q => (window.matchMedia ? window.matchMedia(q).matches : false);
   const STOPPED = new Error("stopped");                              // a read that was given up for another file
 
@@ -20,6 +20,7 @@
   async function ready(needPdf) {
     if (!state.lang) state.lang = (window.ColorKeyPage && window.ColorKeyPage.state.lang) || await (await fetch("data/language.json")).json();
     await script("reader/reader.js");
+    try { await script("reader/straighten.js"); } catch (e) { /* without it a picture is read as it stands */ }
     if (!state.net) {
       try {                                                          // the runtime's program is stored compressed; unpack it here
         await script("vendor/ort/ort.wasm.min.js");
@@ -95,7 +96,26 @@
   const famOf = id => lang().families.find(f => f.id === id) || lang().unknown;
   const famName = id => { const f = famOf(id); return (f.plain && f.plain.en) || (f.term && f.term.en) || id; };
   const hexOfHead = h => { const hr = state.harmony, sp = h.span >= 0 ? hr.spans[h.span] : null, f = famOf(h.family); return (sp && sp.seventh && sp.family === h.family) ? f.seventh : f.triad; };
-  async function harmonyRead() {
+  /* The note values of every page (reader/rhythm.js): what each notehead and rest is worth, from its stem, flags, beams and
+     dots. Fetched the first time Harmony Color is asked for. Without it the bars are timed from the layout alone. */
+  async function readValues(status) {
+    if (state.rhythm === false || !window.ort) return false;
+    try {
+      await script("reader/rhythm.js");
+      if (!state.rhythm) { status("Getting the reader of note values. The first time, your browser fetches it."); state.rhythm = await window.ColorKeyReaderRhythm.load("reader/", {}); }
+    } catch (e) { console.warn(e); state.rhythm = false; return false; }
+    const R = window.ColorKeyReader, Rh = window.ColorKeyReaderRhythm;
+    for (let i = 0; i < state.pages.length; i++) {
+      const pg = state.pages[i]; if (pg.valued) continue;
+      status(`Reading the note values: page ${i + 1} of ${state.pages.length}`);
+      await new Promise(r => setTimeout(r, 0));
+      const img = pg.image.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, pg.image.width, pg.image.height);
+      await Rh.readPage(state.rhythm, R.toGray(img.data, img.width, img.height), img.width, img.height, pg.result);
+      pg.valued = true;
+    }
+    return true;
+  }
+  async function harmonyRead(status) {
     await script("reader/harmony.js");
     const H = window.ColorKeyReaderHarmony, R = window.ColorKeyReader, P = window.ColorKeyPage && window.ColorKeyPage.state;
     if (!window.ColorKey || !P || !P.dict) throw new Error("the analyzer is not on this page");
@@ -106,20 +126,23 @@
       image = { gray: R.toGray(img.data, img.width, img.height), w: img.width, h: img.height };
     }
     const env = { dict: P.dict, prog: P.prog ? { model: P.prog.model, weight: P.prog.weight, kappa: P.prog.kappa, prior: P.prog.prior } : null, lang: lang() };
+    if (!state.beats) { try { await readValues(status || (() => {})); } catch (e) { console.warn(e); } }      // beats set by hand: the layout is used as before
+    if (status) status("Reading the harmony");
+    await new Promise(r => setTimeout(r, 20));
     return H.read(state.pages.map(p => p.result), env, { beats: state.beats || null, image, tpl: state.meterTpl || null });
   }
   async function setView(view) {
     const status = t => { if ($("omrStatus")) $("omrStatus").textContent = t; };
     if (view === "harmony" && !state.pages.some(p => p.result.notes.length)) return;      // nothing has been read yet
     if (view === "harmony" && !state.harmony) {
-      status("Reading the harmony from the layout of the page");
+      status("Reading the harmony");
       await new Promise(r => setTimeout(r, 20));
-      try { state.harmony = await harmonyRead(); } catch (e) { console.error(e); state.harmony = { ok: false, problem: "the harmony could not be read from this page" }; }
+      try { state.harmony = await harmonyRead(status); } catch (e) { console.error(e); state.harmony = { ok: false, problem: "the harmony could not be read from this page" }; }
       if (!state.harmony.ok) { status("Harmony Color could not be made from this page: " + state.harmony.problem + ". Pitch Color is still here."); state.harmony = null; return; }
     }
     state.view = view;
     for (const b of document.querySelectorAll("#omr .seg button")) b.setAttribute("aria-pressed", String(b.dataset.omr === view));
-    status(view === "harmony" ? "A draft. The page sees where the notes stand, not how long they last." : "");
+    status(view !== "harmony" ? "" : state.harmony.chosen === "counted" ? "A draft. The bars are counted from the note values the page read. Ties, small notes and repeats are not read." : "A draft. The page sees where the notes stand, not how long they last.");
     state.pages.forEach(paint); summary();
     if ($("omrSay")) $("omrSay").textContent = (mq("(hover: none)") ? "Tap" : "Point at") + (view === "harmony" ? " a note to see the chord it was read in." : " a note to see how it was read.");
   }
@@ -160,11 +183,15 @@
     hr.heads.forEach(h => { if (h.page !== pi) return; const d = Math.hypot(h.x - x, h.y - y); if (d < bd) { bd = d; best = h; } });
     if (!best || bd > Math.max(best.space * 1.6, reach)) return null;
     const n = best.note, name = LETTERS[n.letter] + ACC[String(n.alter)] + n.octave, sp = best.span >= 0 ? hr.spans[best.span] : null;
-    if (!sp || !sp.label) return { hex: hexOfHead(best), text: `${name}: no chord was read here (bar ${best.bar + 1}).` };
+    if (best.grace) return { hex: hexOfHead(best), text: `${name}: a small note. It is not counted in the bar and takes the color of the note it leans on (bar ${best.bar + 1}).` };
+    const rv = hr.chosen === "counted" ? n.rv : null, worth = rv && rv.value >= 0 ? ` It was read as ${VALUE_WORDS[rv.dots ? 1 : 0][rv.value] || "a note"}.` : "";
+    if (!sp || !sp.label) return { hex: hexOfHead(best), text: `${name}: no chord was read here (bar ${best.bar + 1}).${worth}` };
     const fig = window.ColorKey.prettyAccidentals(sp.figure || "?").replace(" (cad)", " (cadential six-four)");
-    return { hex: hexOfHead(best), text: `${fig}${sp.cueDegree ? " (unsure)" : ""}: ${famName(best.family)}${sp.seventh ? ", seventh chord" : ""}, in ${sp.key ? sp.key.name : "no key"}, bar ${best.bar + 1}. ${name} sounds while this chord lasts.` };
+    return { hex: hexOfHead(best), text: `${fig}${sp.cueDegree ? " (unsure)" : ""}: ${famName(best.family)}${sp.seventh ? ", seventh chord" : ""}, in ${sp.key ? sp.key.name : "no key"}, bar ${best.bar + 1}. ${name} sounds while this chord lasts.${worth}` };
   }
 
+  const VALUE_WORDS = [["a whole note", "a half note", "a quarter note", "an eighth note", "a 16th note", "a 32nd note", "a 64th note"],
+    ["a dotted whole note", "a dotted half note", "a dotted quarter note", "a dotted eighth note", "a dotted 16th note", "a dotted 32nd note", "a dotted 64th note"]];
   const CLEF = { G: "treble clef", F: "bass clef", C: "C clef" };
   function keyWords(f) { return f === 0 ? "no sharps or flats in the key signature" : Math.abs(f) + (f > 0 ? " sharp" : " flat") + (Math.abs(f) > 1 ? "s" : "") + " in the key signature"; }
   function say(pg, n) {
@@ -182,7 +209,7 @@
     const wrap = document.createElement("figure"); wrap.className = "omr-page";
     const cv = document.createElement("canvas"); cv.width = image.width; cv.height = image.height;
     wrap.appendChild(cv);
-    const cap = document.createElement("figcaption"); cap.textContent = `Page ${num}: ${result.staves.length} staves, ${result.notes.length} notes` + (result.problem ? " (" + result.problem + ")" : "");
+    const cap = document.createElement("figcaption"); cap.textContent = `Page ${num}: ${result.staves.length} staves, ${result.notes.length} notes` + (result.turned ? `, turned level by ${Math.abs(result.turned).toFixed(1)}°` : "") + (result.problem ? " (" + result.problem + ")" : "");
     wrap.appendChild(cap);
     cv.setAttribute("role", "img"); cv.setAttribute("aria-label", "The printed page with its notes colored by pitch. " + cap.textContent);
     $("omrPages").appendChild(wrap);
@@ -212,8 +239,15 @@
     const fams = lang().families.filter(f => count[f.id]);
     $("omrLegend").innerHTML = fams.map(f => `<li><span class="chip"><span class="dot" style="background:${esc(f.triad)}"></span>${esc(famName(f.id))}</span></li>`).join("");
     const how = hr.chosen === "read" ? `read from the time signature (${esc(hr.meter.name)})` : hr.chosen === "set" ? "set by you" : "judged from the layout, no time signature found";
+    const pick = pressed => [2, 3, 4, 6].map(b => `<button type="button" data-beats="${b}" aria-pressed="${pressed && b === hr.beats}">${b}</button>`).join("");
     $("omrBeats").hidden = false;
-    $("omrBeats").innerHTML = `<span>Beats in a bar</span> ` + [2, 3, 4, 6].map(b => `<button type="button" data-beats="${b}" aria-pressed="${b === hr.beats}">${b}</button>`).join("") + ` <span class="how">${how}</span>` + (state.beats ? ` <button type="button" data-beats="0" class="auto">let the page choose</button>` : "");
+    if (hr.chosen === "counted") {                                    // the bars were counted from the note values: say the meter that came out, and how many bars did not add up
+      const ms = hr.rhythm.meters, more = ms.slice(1, 4).map(m => `${esc(m.name)} from bar ${m.bar}`).join(", ") + (ms.length > 4 ? ", and more" : ""), odd = hr.rhythm.how.broken || 0;
+      $("omrBeats").innerHTML = `<span>Meter</span> <b>${esc(ms[0].name)}</b>${more ? ` <span class="how">then ${more}</span>` : ""} <span class="how">${ms[0].read ? "read from the time signature, the bars" : "from the bars,"} counted from the note values` +
+        `${odd ? ` (${nf(odd)} of ${nf(hr.bars)} bars did not add up; their count is a best guess)` : ""}</span> <span>or set the beats in a bar</span> ` + pick(false);
+    } else {
+      $("omrBeats").innerHTML = `<span>Beats in a bar</span> ` + pick(true) + ` <span class="how">${how}</span>` + (state.beats ? ` <button type="button" data-beats="0" class="auto">let the page choose</button>` : "");
+    }
     const top = fams.slice().sort((a, b) => count[b.id] - count[a.id])[0];
     if (top && window.ColorKeyPage && window.ColorKeyPage.field) window.ColorKeyPage.field.fromPiece(top.triad);
   }
@@ -235,6 +269,12 @@
     const cv = document.createElement("canvas"); cv.width = Math.round(src.width * f); cv.height = Math.round(src.height * f);
     const g = cv.getContext("2d", { willReadFrequently: true }); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(src, 0, 0, cv.width, cv.height);
     return cv;
+  }
+  /* A picture held askew is turned level before it is read (reader/straighten.js); a page that stands straight is not touched. */
+  function level(cv) {
+    const S = window.ColorKeyStraighten;
+    if (!S) return { canvas: cv, angle: 0 };
+    try { return S.straighten(cv, window.ColorKeyReader); } catch (e) { console.warn(e); return { canvas: cv, angle: 0 }; }
   }
   async function readCanvas(cv, carry, label, token) {
     const g = cv.getContext("2d", { willReadFrequently: true }), img = g.getImageData(0, 0, cv.width, cv.height);
@@ -272,19 +312,21 @@
             const g = cv.getContext("2d", { willReadFrequently: true }); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height);
             await page.render({ canvasContext: g, viewport: vp }).promise; return cv;
           };
-          let cv = await render(1800), saved = JSON.stringify(carry), res = await readCanvas(cv, carry, `Page ${p} of ${pdf.numPages}`, token);
+          let lev = level(await render(1800)), cv = lev.canvas, saved = JSON.stringify(carry), res = await readCanvas(cv, carry, `Page ${p} of ${pdf.numPages}`, token);
           if (res.space && res.space < 10 && base.width) {             // small print: draw the page larger and read again
             const again = Math.min(3600, Math.round(1800 * 13 / res.space));
             Object.keys(carry).forEach(k => delete carry[k]); Object.assign(carry, JSON.parse(saved));
-            cv = await render(again); res = await readCanvas(cv, carry, `Page ${p} of ${pdf.numPages} (larger)`, token);
+            lev = level(await render(again)); cv = lev.canvas; res = await readCanvas(cv, carry, `Page ${p} of ${pdf.numPages} (larger)`, token);
           }
           if (!live()) return;
+          res.turned = lev.angle;
           addPage(cv, res, p); summary();
         }
       } else {
-        const bmp = await createImageBitmap(file), cv = canvasOf(bmp, 3200);
+        const bmp = await createImageBitmap(file), lev = level(canvasOf(bmp, 3200)), cv = lev.canvas;
         const res = await readCanvas(cv, carry, "Reading", token);
         if (!live()) return;
+        res.turned = lev.angle;
         addPage(cv, res, 1); summary();
       }
       if (!live()) return;
