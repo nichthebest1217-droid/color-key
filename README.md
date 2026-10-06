@@ -5,10 +5,13 @@ Drop a score and see its harmony in color: a MusicXML file, a PDF, or a picture 
 This folder is the whole site: plain files, no build step, no server code. Any static host can serve it.
 
 - `index.html`, `style.css`, `app.js`: the page.
+- `studio.js`: "Make it yours". A visitor's own colors, names and readings, kept in the visitor's browser and nowhere else.
+  Without this file the page works as published.
 - `engine/`: reads the score, finds the keys and chords, colors the notes (`colorkey.js`), writes the numerals under the staff
   (`overlay.js`), and reads each chord a second time by rule (`second.js`).
 - `reader/`: reads printed music from a PDF or a picture, on the visitor's device, with the small trained network it uses.
-- `data/`: the chord counts, the chord-to-chord step counts, the colors.
+- `data/`: the chord counts, the chord-to-chord step counts, the colors (`language.json`), and the other color sets a
+  visitor can choose (`palettes.json`).
 - `examples/`: three short scores to try.
 - `vendor/`: the four open-source libraries the page uses (OpenSheetMusicDisplay, JSZip, PDF.js, ONNX Runtime Web), with their licenses.
 - `CREDITS.md`: sources and licenses.

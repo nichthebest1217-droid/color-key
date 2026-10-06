@@ -22,7 +22,7 @@
         <a class="brand" href="#top" aria-label="Color Key"><svg viewBox="0 0 26 20" aria-hidden="true"><ellipse cx="8" cy="12" rx="7" ry="5" transform="rotate(-20 8 12)" fill="var(--c-tonic, currentColor)"/><ellipse cx="18" cy="8" rx="7" ry="5" transform="rotate(-20 18 8)" fill="var(--c-dominant, currentColor)" opacity=".92"/></svg><span class="brand-name">Color Key</span></a>
         <div class="nav-links" id="navLinks">
           <a href="#colors">Colors</a>
-          
+          <a href="#yours">Make it yours</a>
           <a href="#how">Reasoning</a>
           <a href="#found">Findings</a>
           <a href="#mind">Limits</a>
@@ -35,7 +35,7 @@
           <summary>Contents</summary>
           <div class="toc-list glass thick">
             <a href="#colors">The colors</a>
-            
+            <a href="#yours">Make it yours</a>
             <a href="#how">How it reasons</a>
             <a href="#found">What I found</a>
             <a href="#mind">Keep in mind</a>
@@ -127,7 +127,7 @@
         </figure>
         <div class="duo-text">
           <h3>Harmony Color</h3>
-          <p class="quiet" style="margin-top:4px">Nine color families, one for each role a chord can play.</p>
+          <p class="quiet" style="margin-top:4px">Nine color families, one for each role a chord can play. Click one to change its color or its name.</p>
           <ul class="roles" id="harmonyList"></ul>
           <div class="cap" id="harmonyCap"></div>
         </div>
@@ -160,9 +160,67 @@
         <h3>Things to try</h3>
         <p><b>Follow the green.</b> Find every tonic chord, and notice which phrases end on it.</p>
         <p><b>Watch red turn green.</b> That is a dominant resolving to the tonic. Play the two chords: first the pull, then the rest.</p>
-        <p><b>Disagree with it.</b> If you hear a chord differently, you may be right. Play it again and trust your ear.</p>
+        <p><b>Disagree with it.</b> If you hear a chord differently, you may be right. Choose your own reading under Make it yours.</p>
         <p class="quiet">These are ways to use the page, not tested methods.</p>
       </div>
+    </div>
+  </section>
+
+  
+  <section class="band" id="yours">
+    <div class="col">
+      <div class="split">
+        <div>
+          <p class="eyebrow">Your colors</p>
+          <h2>Make it yours</h2>
+          <p class="intro">The page names the harmony first and colors it second. The names I can test against experts. The colors are a choice, and no palette is the correct one, mine included.</p>
+        </div>
+        <figure class="layers" role="img" aria-label="Two layers: first the name of the chord, which is checked against experts; over it the color, which is yours to change.">
+          <div class="card pane l1"><b>1 · The name</b><span class="show num">IV&nbsp; V7&nbsp; I</span>checked against experts</div>
+          <div class="card raised l2"><b>2 · The color</b><span class="show"><i class="dot" style="background:var(--c-subdominant)"></i><i class="dot" style="background:var(--c-dominant-7)"></i><i class="dot" style="background:var(--c-tonic)"></i></span>yours to change</div>
+        </figure>
+      </div>
+      <div class="pane pad yours">
+        <div class="y-col">
+          <h3>Pick a set</h3>
+          <div class="sets" id="palettes" role="radiogroup" aria-label="Color set"></div>
+          <p class="quiet" id="paletteSay"></p>
+        </div>
+        <div class="y-col">
+          <h3>Change a family</h3>
+          <p>Click a family on the wheel to give it your own color or name. If you call the dominant "tension", or see the tonic as blue, the wheel and the score follow.</p>
+          <p class="quiet" id="langSay" role="status">Nothing changed yet.</p>
+          <div class="btn-row">
+            <button class="btn" id="langSave" type="button">Save my colors</button>
+            <button class="btn" id="langOpen" type="button">Open a colors file</button>
+            <button class="btn" id="langReset" type="button" hidden>Back to the original</button>
+            <input type="file" id="langFile" accept=".json,application/json" hidden>
+          </div>
+        </div>
+        <div class="y-col">
+          <h3>Correct a chord</h3>
+          <p>Click a Roman numeral and choose the reading you hear. Ask the page to remember it, and it reads those notes your way wherever they return in the same place in the key.</p>
+          <p class="quiet" id="readNone">Nothing yet. Click a Roman numeral in a score to change a reading.</p>
+          <h4 id="hereTitle" hidden>In this piece</h4><ul class="kept" id="hereList" hidden></ul>
+          <h4 id="taughtTitle" hidden>In every score</h4><ul class="kept" id="taughtList" hidden></ul>
+          <button class="link" id="forgetAll" type="button" hidden>Forget everything I taught</button>
+        </div>
+        <div class="yours-foot">
+          <details>
+            <summary>What happens to my changes</summary>
+            <div class="more">
+              <ul>
+                <li>Your changes stay in this browser, on this device. Nothing is sent anywhere. "Save my colors" writes them to a file you can keep or pass on. The score you download carries your colors and the chords you changed.</li>
+                <li>A reading the page remembers applies to every score you open here. It replaces the counts for those notes and is stored in the key the page found. If the key was wrong there, you have taught a reading in the wrong key.</li>
+                <li>What you change is untested. The figures on this page describe the page as published, not your version.</li>
+                <li>"Back to the original" returns the reference colors and names. "Forget everything I taught" removes your readings.</li>
+              </ul>
+            </div>
+          </details>
+          <p class="quiet" id="keptSay"></p>
+        </div>
+      </div>
+      <p class="aside">If you see colors of your own when you hear harmony, this is where to put them.</p>
     </div>
   </section>
 
@@ -354,7 +412,7 @@
         <div><dt>A question mark is a hint, not a guarantee.</dt><dd>Unmarked readings can be wrong too.</dd></div>
         <div><dt>A wrong key spoils what follows.</dt><dd>The colors after it are wrong with it. Both readings count from the same key, so they can agree and still be wrong.</dd></div>
         <div><dt>Printed pages are read less surely than files.</dt><dd>The reader does not read rhythm or octave signs, and it can miscount a key signature on a crowded old engraving. I have not tested photos taken with a camera.</dd></div>
-        <div><dt>The colors are a choice.</dt><dd>For some kinds of color vision the green and the red are hard to tell apart. The Roman numeral is always there as a second cue.</dd></div>
+        <div><dt>The colors are a choice.</dt><dd>For some kinds of color vision the green and the red are hard to tell apart. The Roman numeral is always there as a second cue, and the colors can be changed.</dd></div>
         <div><dt>Whether colors help someone learn has not been tested.</dt><dd>That is the hope behind the project, not a result.</dd></div>
       </dl>
     </div>
@@ -375,7 +433,7 @@
               <details><summary>More</summary><div class="more"><p>Chopin's mazurkas, Grieg's Lyric Pieces, Liszt, Schumann, Tchaikovsky. Counting them in might help with later music. I will not know until it is tested, and that needs a new test, fixed in advance.</p></div></details></li>
             <li><b>Colors for music outside a key.</b><span class="tag">An idea</span><span>Messiaen described colors for his own modes. A second color language for such music is possible.</span>
               <details><summary>More</summary><div class="more"><p>The colors here describe roles in a key, and some music has no tonic and dominant to color. A language for it would be kept apart from this one. Whose colors it should use is an open question.</p></div></details></li>
-            <li><b>Correcting more than a chord.</b><span class="tag">Not built</span><span>You cannot yet correct a chord, the key of a passage, or the place where a chord changes.</span></li>
+            <li><b>Correcting more than a chord.</b><span class="tag">Not built</span><span>You cannot yet correct the key of a passage or move the place where a chord changes, and a wrong key spoils the colors after it.</span></li>
           </ul>
         </div>
         <div>
@@ -407,7 +465,7 @@
       <div class="prose pane">
         <p>I play music, and someone close to me is neurodivergent and plays too. During a summer internship I was asked to build something useful for autistic children. A music therapist showed me how strongly visual cues and music connect. Playing an instrument can be good practice for fine motor skills, yet the notation is often what stands in the way.</p>
         <p>My first idea was a rainbow: one color for each pitch, from C up to the next C. It is still here, as <b>Pitch Color</b>. But a rainbow only says which note to play. I wanted the page to show what the harmony is doing: where it rests, where it pulls, where it turns away. That became <b>Harmony Color</b>.</p>
-        <p>I also have sound-to-color synesthesia. When I hear harmony, I see color. The composer Olivier Messiaen wrote about the colors of his own chords. People do not see the same colors. So this page keeps two things apart. The name of a chord is something I can check against experts. Its color is a choice, and it does not have to be yours.</p>
+        <p>I also have sound-to-color synesthesia. When I hear harmony, I see color. The composer Olivier Messiaen wrote about the colors of his own chords. People do not see the same colors. So this page keeps two things apart. The name of a chord is something I can check against experts. Its color is a choice, and you are free to change it.</p>
       </div>
     </div>
   </section>
@@ -439,7 +497,7 @@
         <li>The harmony colors were worked out with a music-theory teacher, from a hand-colored example.</li>
         <li>The second reading is my own formulation of textbook harmony: chords built in thirds, named by the degree of their root.</li>
         <li>No account, no tracking, no outside service. Your score never leaves your device. The small network that reads printed music runs on your device too.</li>
-        
+        <li>Your colors and the readings you teach are kept in this browser and nowhere else. The Soft and Red-green sets were derived from the reference colors by calculation.</li>
       </ul>
     </div>
   </section>
@@ -461,7 +519,7 @@
 <script src="engine/overlay.js"></script>
 <script src="engine/second.js"></script>
 <script src="reader/ui.js"></script>
-
+<script src="studio.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

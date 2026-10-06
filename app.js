@@ -12,6 +12,7 @@
   const count = n => n.toLocaleString("en-US");
   // a chord's name as the score prints it: accidentals as signs, the diminished sign as a small circle
   const numeralOf = (label, mode) => { const p = label ? CK.labelParts(label, mode) : null; return p ? pretty(CK.campaniaText(Object.assign({}, p, { quality: (p.quality || "").replace("o", "°") }))) : "?"; };
+  const written = t => pretty(t).replace(/([iv])o(?![a-z])/g, "$1°");       // a chord name the visitor chose or wrote (span.textOverride), printed the same way
   const pause = () => new Promise(r => setTimeout(r, 30));
   function status(text, kind) { const el = $("status"); el.textContent = text || ""; el.title = text || ""; el.className = "status" + (kind === "error" ? " error" : ""); }
   function dropNote(text) { $("dropNote").textContent = text || ""; }
@@ -185,7 +186,7 @@
     all.forEach((t, n) => {
       const s = state.result.spans[+t.getAttribute("data-i")]; if (!s) return;
       const fam = state.lang.families.find(f => f.id === s.family) || state.lang.unknown;
-      const name = s.textOverride ? pretty(s.textOverride) : s.label ? numeralOf(s.label, s.key ? s.key.mode : null) : "";
+      const name = s.textOverride ? written(s.textOverride) : s.label ? numeralOf(s.label, s.key ? s.key.mode : null) : "";
       t.setAttribute("tabindex", n ? "-1" : "0"); t.setAttribute("role", "button"); t.setAttribute("aria-haspopup", "dialog");
       t.setAttribute("aria-label", name ? name + ", " + fam.plain.en + ": the " + (state.readings ? "readings" : "reading") + " of this chord"
         : "No reading: " + (state.readings ? "what the rule says about this chord" : "why this chord has none"));
@@ -368,7 +369,7 @@
     const mode = s.key ? s.key.mode : null, text = l => numeralOf(l, mode), num = t => `<span class="num">${esc(t)}</span>`;
     const fam = state.lang.families.find(f => f.id === s.family) || state.lang.unknown, ev = s.evidence || {}, hex = s.hex || fam.triad;
     const rd = state.readings ? state.readings[i] : null, rule = rd && rd.relation && rd.rule ? rd.rule : null;       // the second reading of this chord, when there is one
-    const shown = s.textOverride ? pretty(s.textOverride) : s.label ? text(s.label) : "?", bar = barOf(state.score, s.start);
+    const shown = s.textOverride ? written(s.textOverride) : s.label ? text(s.label) : "?", bar = barOf(state.score, s.start);
     // the first reading, from examples: its first sentence, then the rest
     let first; const rest = [];
     if (!s.label) first = "These notes, and anything close to them, are not among the chords it knows. So it gives no reading.";
@@ -384,7 +385,7 @@
       }
       const alts = (s.alternatives || []).slice(0, 3);
       if (alts.length) rest.push("Other readings of these notes: " + alts.map(a => `${num(text(a.label))} (${count(a.count)})`).join(", ") + ".");
-      if (s.cueDegree) rest.push("Marked ? because the examples do not agree clearly enough on the color.");
+      if (s.cueDegree && !s.familyOverride && !s.textOverride) rest.push("Marked ? because the examples do not agree clearly enough on the color.");       // a chord the visitor changed carries no mark
     }
     const where = "Bar " + esc(bar) + (s.key ? ", in " + esc(keyName(s.key.name)) : "")
       + (rd && rd.notesLine ? " · " + esc(rd.notesLine) : "." + (s.input ? " The notes are " + esc(describeNotes(s.input)) + "." : ""));
@@ -719,6 +720,7 @@
           Studio.init({ base: lang, palettes, dict: state.dict }); state.lang = Studio.language() || lang;
         } catch (e) { console.error(e); state.lang = lang; }
       }
+      else for (const el of document.querySelectorAll('#yours, a[href="#yours"]')) el.hidden = true;       // the layer is not running (?studio=0, or its script did not load): its section and the links to it step aside
       state.examples = examples; state.ready = true;
       $("foot").textContent = "Version " + about.version + " · " + about.date;
       $("tries").insertAdjacentHTML("beforeend", examples.map(e => `<button class="chip" type="button" data-ex="${esc(e.id)}">${esc(e.short)}</button>`).join(""));
