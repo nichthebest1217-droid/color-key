@@ -385,7 +385,7 @@
     const unsure = spans.filter(s => !mine(s) && (!s.label || s.cueDegree)).reduce((a, s) => a + s.end.num() - s.start.num(), 0) / total;
     const pitched = sc.notation.filter(r => !r.isRest).length, colored = harm ? report.nColored : pitch.n;
     const facts = [count(colored) + (colored === pitched ? " notes colored" : " of " + count(pitched) + " notes colored")];
-    if (state.same !== null) facts.push(state.same ? "notes unchanged ✓" : '<span class="warn">the colored score differs from the original; do not use it</span>');
+    if (state.same !== null) facts.push(state.same ? "notes unchanged" : '<span class="warn">the colored score differs from the original; do not use it</span>');
     if (harm) {
       facts.push(count(chords.length) + " chords");
       facts.push(Math.round(100 * unsure) + "% marked unsure" + (unsure > 0.5 ? " <b>(this music may lie outside what the page knows)</b>" : ""));
@@ -675,7 +675,7 @@
   // Switch for checking:  ?motion=off  (the same as a visitor who asked for reduced motion)
   function makeField() {
     const root = document.documentElement, host = document.getElementById("field"), els = [...host.querySelectorAll("canvas.f")], ringEl = host.querySelector(".ring");
-    const reduce = media("(prefers-reduced-motion: reduce)"), off = /[?&]motion=off\b/.test(location.search), still = () => reduce.matches || off;
+    const reduce = media("(prefers-reduced-motion: reduce)"), off = /[?&]motion=off\b/.test(location.search), unseen = getComputedStyle(host).display === "none", still = () => reduce.matches || off || unseen;      // the minimal style hides it (D060): then it never moves
     const N = 192, LIFE = 2.6;
     const F = [       // hx, hy: where it rests (fractions of the window). size: its width, times the window's longer side. lean: how far it follows the pointer. tau: how slowly, in seconds.
       { hx: .16, hy: .12, size: 1.22, lean: .30, tau: 1.0 },
@@ -933,7 +933,7 @@
     if (fsNow()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
     else { const r = (stageEl.requestFullscreen || stageEl.webkitRequestFullscreen).call(stageEl); if (r && r.catch) r.catch(() => {}); }
   };
-  $("full").hidden = !fsOK;
+  $("full").hidden = !fsOK; $("fullKey").hidden = !fsOK;
   $("full").addEventListener("click", toggleFull);
   ["fullscreenchange", "webkitfullscreenchange"].forEach(t => document.addEventListener(t, () => { const on = fsNow() === stageEl; $("full").setAttribute("aria-label", on ? "Leave full screen" : "Full screen"); stageEl.classList.toggle("is-full", on); closeWhy(); }));
   // keys, while no field has the keyboard: space plays or pauses, H and P choose the colors, + and − size the score, F fills the screen
@@ -952,20 +952,6 @@
     else if (k === "f" || k === "F") toggleFull();
   });
 
-  // a slim line in the navigation shows how far down the page the reader is
-  const prog = document.createElement("i"); prog.className = "nav-prog"; prog.setAttribute("aria-hidden", "true");
-  document.querySelector(".nav-in").appendChild(prog);
-  let progRaf = 0;
-  const progress = () => { progRaf = 0; const h = document.documentElement.scrollHeight - window.innerHeight; prog.style.transform = "scaleX(" + (h > 0 ? Math.min(1, Math.max(0, window.scrollY / h)) : 0).toFixed(4) + ")"; };
-  window.addEventListener("scroll", () => { if (!progRaf) progRaf = requestAnimationFrame(progress); }, { passive: true });
-  progress();
-  // sections settle into place as they come into view (not for a reader who asked for less motion, and never hiding anything without a script)
-  if ("IntersectionObserver" in window && !media("(prefers-reduced-motion: reduce)").matches) {
-    const parts = [...document.querySelectorAll("section.band .col > *, footer.col")].filter(el => el.getBoundingClientRect().top > window.innerHeight);
-    parts.forEach(el => el.classList.add("rise"));
-    const ro = new IntersectionObserver(es => { for (const en of es) if (en.isIntersecting) { en.target.classList.add("risen"); ro.unobserve(en.target); } }, { rootMargin: "0px 0px -8% 0px" });
-    parts.forEach(el => ro.observe(el));
-  }
   // back to the top, once the score is out of sight
   const up = document.createElement("a"); up.className = "to-top glass"; up.href = "#top"; up.setAttribute("aria-label", "Back to the top");
   up.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3.5M3.5 8 8 3.5 12.5 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';

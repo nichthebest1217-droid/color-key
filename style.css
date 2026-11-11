@@ -627,23 +627,6 @@ footer.col::before { content: ""; flex-basis: 100%; border-top: 1px solid var(--
 @media print { .listen { display: none; } }
 
 /* ------------------------------------------------------------------ polish (November 2026) */
-/* the title carries the page's own progression underneath it: home, away, the pull, home again */
-.mark::after { content: ""; display: block; width: min(4.1em, 100%); height: .085em; min-height: 5px; margin-top: .2em; border-radius: 99px;
-  background: linear-gradient(90deg, var(--c-tonic, #3a9a50) 0 22%, var(--c-submediant, #d2a22b) 22% 41%, var(--c-subdominant, #2f5fd0) 41% 60%, var(--c-dominant, #cc3333) 60% 80%, var(--c-tonic, #3a9a50) 80%);
-  transform-origin: left center; }
-@media (prefers-reduced-motion: no-preference) { html.js .mark::after { animation: ck-draw 1.1s .15s cubic-bezier(.2, .75, .2, 1) both; } }
-@keyframes ck-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-/* how far down the page: a hairline of the same colors along the foot of the navigation capsule */
-.nav-prog { position: absolute; left: 24px; right: 24px; bottom: 0; height: 2px; border-radius: 2px; pointer-events: none; transform: scaleX(0); transform-origin: left center; opacity: .8;
-  background: linear-gradient(90deg, var(--c-tonic, #3a9a50), var(--c-subdominant, #2f5fd0) 35%, var(--c-dominant, #cc3333) 70%, var(--c-tonic, #3a9a50)); }
-
-/* each section's small heading carries a stroke of one family's color */
-.band .eyebrow { display: inline-flex; align-items: center; gap: 10px; }
-.band .eyebrow::before { content: ""; width: 20px; height: 3px; border-radius: 3px; background: var(--fam, var(--c-tonic, currentColor)); }
-#colors { --fam: var(--c-tonic); } #yours { --fam: var(--c-subdominant); } #how { --fam: var(--c-dominant); } #found { --fam: var(--c-submediant); }
-#mind { --fam: var(--c-neapolitan); } #next { --fam: var(--c-applied); } #why { --fam: var(--c-mediant); } #sources { --fam: var(--c-supertonic); }
-
 /* the player: a clear Play, a quiet Stop, and a line that fills as the piece goes */
 .player .btn { gap: 7px; }
 .player .p-ic { display: inline-grid; place-items: center; width: 14px; height: 14px; }
@@ -652,8 +635,8 @@ footer.col::before { content: ""; flex-basis: 100%; border-top: 1px solid var(--
 .player .p-stop { padding: 0 14px; }
 .player-track { position: relative; flex: 1 1 140px; max-width: 320px; height: 4px; border-radius: 4px; background: var(--track); overflow: hidden; }
 .player-track i { position: absolute; inset: 0; border-radius: inherit; transform: scaleX(0); transform-origin: left center; transition: transform .12s linear;
-  background: linear-gradient(90deg, var(--c-tonic, #3a9a50), var(--c-subdominant, #2f5fd0), var(--c-dominant, #cc3333)); }
-.player input[type=range] { accent-color: var(--c-tonic, var(--ink)); }
+  background: var(--ink); }
+.player input[type=range] { accent-color: var(--ink); }
 .player-at:not(:empty) { padding: 3px 10px; border-radius: 999px; background: var(--wash); color: var(--ink-2); }
 
 /* the size of the score, and the whole screen for it */
@@ -673,12 +656,6 @@ footer.col::before { content: ""; flex-basis: 100%; border-top: 1px solid var(--
 .why .hear .num { font-size: 15px; }
 .why .hear .dot { margin-left: 2px; }
 
-/* sections settle into place as they arrive */
-@media (prefers-reduced-motion: no-preference) {
-  html.js .rise { opacity: 0; transform: translateY(18px); transition: opacity .75s cubic-bezier(.2, .7, .2, 1), transform .75s cubic-bezier(.2, .7, .2, 1); }
-  html.js .rise.risen { opacity: 1; transform: none; }
-}
-
 /* back to the top */
 .to-top { position: fixed; right: 20px; bottom: 20px; z-index: 25; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--ink); text-decoration: none;
   opacity: 0; transform: translateY(10px) scale(.9); pointer-events: none; transition: opacity .25s, transform .25s; }
@@ -697,4 +674,130 @@ footer.col::before { content: ""; flex-basis: 100%; border-top: 1px solid var(--
   .player-track { order: 9; flex-basis: 100%; max-width: none; }
   .to-top { right: 14px; bottom: 14px; }
 }
-@media print { .rise { opacity: 1 !important; transform: none !important; } .view, .to-top, .nav-prog, .hear { display: none !important; } .mark::after { animation: none; } }
+@media print { .view, .to-top, .hear { display: none !important; } }
+
+/* ------------------------------------------------------------------ minimal (11 November 2026, D060)
+   One flat ground, ink and hairlines. No moving backdrop, no glass, no shadows on the page itself: sections are set apart by
+   space and a thin rule, not by boxes. The color language stays the only color on the page. Floating things (the chord card,
+   the menu) keep a faint shadow so that they read as lifted over the score. */
+:root { --ground: #FAFAF8; --solid: #FFFFFF; --over: rgba(250, 250, 248, .86); --over-2: #FFFFFF; --btn: transparent; --btn-h: rgba(20, 24, 31, .045); --well: transparent;
+  --r-pane: 14px; --r-card: 12px; --sh-1: none; --sh-paper: none; --sh-2: 0 1px 2px rgba(20, 24, 31, .05), 0 12px 32px -14px rgba(20, 24, 31, .22); }
+:root[data-theme="dark"] { --ground: #0F1114; --solid: #16191E; --over: rgba(15, 17, 20, .86); --over-2: #16191E; --btn: transparent; --btn-h: rgba(255, 255, 255, .06); --well: transparent;
+  --sh-1: none; --sh-paper: none; --sh-2: 0 1px 2px rgba(0, 0, 0, .4), 0 14px 36px -14px rgba(0, 0, 0, .7); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) { --ground: #0F1114; --solid: #16191E; --over: rgba(15, 17, 20, .86); --over-2: #16191E; --btn: transparent; --btn-h: rgba(255, 255, 255, .06); --well: transparent;
+  --sh-1: none; --sh-paper: none; --sh-2: 0 1px 2px rgba(0, 0, 0, .4), 0 14px 36px -14px rgba(0, 0, 0, .7); } }
+.field { display: none; }
+html:not(.js) body { background: var(--ground); }
+
+/* type: lighter weights, the same sizes */
+.mark { font-weight: 500; letter-spacing: -.045em; }
+.band h2, .piece, .drop strong, .fig { font-weight: 500; }
+.band h2 { letter-spacing: -.032em; }
+.eyebrow { font-size: 13px; letter-spacing: .02em; }
+
+/* the navigation: a flat bar of the ground's color, with one hairline */
+.nav-in { border: 1px solid var(--hair); box-shadow: none; }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .nav-in.glass { background: var(--over); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); } }
+.nav::before { display: none; }
+.nav-links a[aria-current="true"]::after { height: 1px; bottom: 3px; }
+
+/* panes: no fill, no edge light, no shadow, no rim that follows the pointer */
+.pane { background: none; border: 1px solid var(--hair); box-shadow: none; }
+.pane::after { display: none !important; }
+.glass, .raised { border-color: var(--hair); }
+.glass.thick, .toc-list.glass.thick { background: var(--solid); }
+
+/* in the sections a pane is not a box at all: a rule above it, and the column's own edges */
+.band .pane:not(.card) { border: 0; border-top: 1px solid var(--hair); border-radius: 0; }
+.band .pane.pad { padding: 32px 0 0; }
+.band .steps { padding: 0; }
+.band .mind { padding: 0; }
+.band .src { padding: 0; }
+.band .prose { padding: 26px 0 0; }
+.band .findings { gap: 0 56px; }
+.band .finding { padding: 26px 0 28px; }
+.band .finding:nth-child(n+3) { margin-top: 8px; }
+.y-col:first-child { padding-left: 0; }
+.steps li::before { background: none; }
+.layers .card { border: 1px solid var(--hair-2); background: var(--solid); box-shadow: none; }
+
+/* the drop zone: only its dashed line */
+.drop { border: 0; padding: 22px 26px 24px; }
+.drop::before { inset: 0; border-width: 1px; border-radius: var(--r-pane); }
+
+/* the bar above the score and the paper under it: hairlines */
+.stage-bar { border-color: var(--hair); }
+.sheet, .omr-page { box-shadow: 0 0 0 1px var(--hair); }
+
+/* controls: outlined, with nothing behind them until the pointer comes */
+.btn { border-color: var(--hair-2); }
+.btn:hover { border-color: var(--ink-3); }
+.seg { background: none; box-shadow: inset 0 0 0 1px var(--hair-2); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); box-shadow: none; }
+.chip { border-color: transparent; padding: 0 10px; }
+.legend { gap: 2px; }
+.tries .chip, .tries button { border-color: var(--hair-2); }
+.set { border-color: var(--hair-2); }
+.tag { border-color: var(--hair); color: var(--ink-3); }
+.to-top { border: 1px solid var(--hair-2); background: var(--ground); box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.player-at:not(:empty) { background: none; padding: 0; }
+.why .x { background: none; }
+.why .x:hover { background: var(--btn-h); }
+footer.col::before { border-top-color: var(--hair); }
+
+/* ------------------------------------------------------------------ unslop polish (11 November 2026, D061)
+   Applied in its polish mode (light slop): palette, type and layout kept; only the audit's findings fixed.
+   Method: unslop by Damir Sokolovsky (https://github.com/heydamir/unslop), CC BY 4.0. */
+:root { --ease: cubic-bezier(.22, 1, .36, 1); }
+
+/* radius by size, not a pill for everything: controls 8, cards 12, panels 14; inside the switch, outer minus padding */
+.btn, .chip, .toc > summary, .nav-links a, .skip, .player select, .omr-beats button, .field-in, .icon-btn, .why .x, .status { border-radius: 8px; }
+.seg { height: 36px; padding: 2px; border-radius: 10px; }
+.seg button { height: 32px; border-radius: 8px; }
+.seg button:focus-visible { border-radius: 8px; }
+.tag { padding: 0 6px; border-radius: 4px; font-size: 12px; }
+.nav-in { border-radius: 14px; padding: 0 8px 0 16px; }
+.to-top { border-radius: 12px; }
+
+/* one easing curve, no overshoot; a press is a small scale down */
+.drop { transition: transform .2s var(--ease); }
+.wedge { transition: transform .24s var(--ease); }
+.layers .card { transition: transform .4s var(--ease); }
+.btn, .chip, .seg button, .nav-links a, .icon-btn, .set, .roles li, .to-top, details > summary::before { transition-timing-function: var(--ease); }
+.btn:not(:disabled):active { transform: scale(.98); }
+
+/* the 4px grid in the main containers */
+.eyebrow { margin-bottom: 8px; }
+.lede { margin-top: 16px; } .note { margin-top: 12px; }
+.drop { padding: 24px; } .drop .btn { margin-top: 16px; }
+.drop-note { margin: 8px 4px 0; } .tries { margin: 16px 4px 0; }
+.stage-bar { padding: 16px 24px 12px; }
+.meta { margin-top: 12px; padding-top: 12px; }
+.player { gap: 8px 16px; }
+.chip { gap: 8px; padding: 0 12px; }
+.sheet { padding: 8px 16px 16px; }
+.hint { margin: 12px 4px 0; }
+.why { padding: 16px 20px 12px; } .why .x { top: 8px; right: 8px; }
+.roles li { padding: 8px 12px; margin: 0 -12px; } .roles li + li::before { left: 12px; right: 12px; }
+.edit { gap: 8px 16px; margin-top: 12px; padding-top: 12px; }
+.set { padding: 12px; }
+.steps li { padding-left: 56px; }
+.mind div { padding: 20px 0; }
+.band .finding { padding: 24px 0 28px; }
+.band .prose { padding-top: 24px; }
+
+/* type: hierarchy from size and color; 500 for headings and run-in heads, 600 only for a warning */
+h1, h2, h3, h4 { font-weight: 500; }
+.steps b, .try b, .mind dt, .next li b, .roles b, .src b, .set b, .y-col h4, .reading h4, .verdict b, .why .leads h4, .keys b, .facts b, .layers .card b { font-weight: 500; }
+
+/* lifted things are plain surfaces with a hairline and a small neutral shadow: no inner highlight. The navigation is solid. */
+.glass, .raised { box-shadow: 0 0 0 1px var(--hair), var(--sh-2); }
+.nav-in.glass { background: var(--ground); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+
+/* keyboard shortcuts, shown as keycaps under the score (not on touch screens) */
+.shortcuts { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 8px 4px 0; font-size: 13px; color: var(--ink-3); }
+.shortcuts span { display: inline-flex; align-items: center; gap: 4px; }
+.shortcuts span kbd:last-of-type { margin-right: 4px; }
+kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; border: 1px solid var(--hair-2); border-bottom-width: 2px; border-radius: 4px; background: var(--solid); color: var(--ink-2); font: 500 12px/1 var(--ui); }
+@media (hover: none), (pointer: coarse) { .shortcuts { display: none; } }
+@media print { .shortcuts { display: none; } }
