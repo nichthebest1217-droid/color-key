@@ -5,6 +5,7 @@ Drop a score and see its harmony in color: a MusicXML file, a PDF, or a picture 
 This folder is the whole site: plain files, no build step, no server code. Any static host can serve it.
 
 - `index.html`, `style.css`, `app.js`: the page.
+- `player.js`: Play. The notes of the score as plain tones made in the browser, one kind of tone for each kind of instrument.
 - `studio.js`: "Make it yours". A visitor's own colors, names and readings, kept in the visitor's browser and nowhere else.
   Without this file the page works as published.
 - `engine/`: reads the score, finds the keys and chords, colors the notes (`colorkey.js`), writes the numerals under the staff

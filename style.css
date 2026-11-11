@@ -99,9 +99,14 @@ html:not(.js) .duo-main, html:not(.js) .pitch { grid-template-columns: minmax(0,
 /* ------------------------------------------------------------------ the backdrop */
 .field { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; contain: strict; }
 .field canvas, .field .ring { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
-/* the ring a press sends out: a light crest with a faint trough inside it, drawn by the style sheet and only moved by the script */
-.field .ring { width: 320px; height: 320px; margin: -160px 0 0 -160px; border-radius: 50%; opacity: 0;
-  background: radial-gradient(closest-side, transparent 54%, rgb(20 28 44 / var(--ring-b)) 71%, rgb(20 28 44 / var(--ring-b)) 79%, transparent 86%, rgb(255 255 255 / var(--ring-a)) 92%, transparent 99%); }
+/* What a press sends out: not one drawn ring but a patch of water. Three soft swells, the outermost the clearest, each a
+   light crest sliding into a faint trough with no hard edge, a little blurred; the script only moves and fades it. */
+.field .ring { width: 420px; height: 420px; margin: -210px 0 0 -210px; border-radius: 50%; opacity: 0; filter: blur(2.5px);
+  background: radial-gradient(closest-side,
+    transparent 22%,
+    rgb(255 255 255 / calc(var(--ring-a) * .22)) 31%, rgb(20 28 44 / calc(var(--ring-b) * .30)) 38%, transparent 45%,
+    rgb(255 255 255 / calc(var(--ring-a) * .45)) 54%, rgb(20 28 44 / calc(var(--ring-b) * .60)) 61%, transparent 69%,
+    rgb(255 255 255 / calc(var(--ring-a) * .85)) 81%, rgb(20 28 44 / calc(var(--ring-b) * .80)) 89%, transparent 99%); }
 
 /* ------------------------------------------------------------------ glass: two materials */
 /* 1. A pane. Translucent, with a lit top edge, a hairline and a soft shadow. It is NOT blurred: what lies behind it is already soft. */
@@ -269,6 +274,7 @@ body.dragging .veil { display: grid; }
 #score [data-fam] { transition: opacity .2s; }
 .pick { position: absolute; z-index: 2; border-radius: var(--r-s); background: rgba(20, 24, 31, .06); box-shadow: 0 0 0 1.5px rgba(20, 24, 31, .55); pointer-events: none; }
 .pick.kb { box-shadow: 0 0 0 2px var(--paper-ink); }      /* reached by keyboard: the page's ink ring */
+.playmark { position: absolute; left: 0; top: 0; z-index: 3; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--paper-ink); opacity: .55; pointer-events: none; will-change: transform; }
 .here { position: absolute; z-index: 3; border: 2px solid var(--paper-ink); border-radius: var(--r-s); background: rgba(20, 24, 31, .06); pointer-events: none; animation: here 2.6s ease-out forwards; }
 @keyframes here { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
 .hint { margin: 12px 6px 0; font-size: 14px; color: var(--ink-3); }
@@ -509,7 +515,8 @@ footer.col::before { content: ""; flex-basis: 100%; border-top: 1px solid var(--
 
 /* ------------------------------------------------------------------ printed music read from a picture (markup from reader/ui.js) */
 .omr-say { display: flex; align-items: center; gap: 9px; margin-top: 12px; min-height: 44px; padding: 10px 14px; font-size: 14px; color: var(--ink-2); background: var(--well); border: 1px solid var(--hair); border-radius: var(--r-card); }
-.omr-page { margin-top: 12px; padding: 10px; overflow: hidden; border-radius: var(--r-pane); background: var(--paper); box-shadow: 0 0 0 1px var(--pane-ring), var(--sh-paper); }
+.omr-mark { position: absolute; left: 0; top: 0; z-index: 2; width: 3px; margin-left: -1.5px; border-radius: 2px; background: #14181F; opacity: .55; pointer-events: none; will-change: transform; }
+.omr-page { position: relative; margin-top: 12px; padding: 10px; overflow: hidden; border-radius: var(--r-pane); background: var(--paper); box-shadow: 0 0 0 1px var(--pane-ring), var(--sh-paper); }
 .omr-page canvas, .omr-page svg { display: block; width: 100%; height: auto; }
 .omr-page canvas { mix-blend-mode: multiply; }      /* a scan's white takes the paper's tone, in both themes */
 .omr-page figcaption { padding: 8px 6px 2px; font-size: 14px; color: #596372; }
@@ -585,7 +592,7 @@ footer.col::before { content: ""; flex-basis: 100%; border-top: 1px solid var(--
 #printScore { display: none; }
 @media print {
   :root, :root[data-theme="dark"] { --ink: #000; --ink-2: #222; --ink-3: #444; --hair: #BBB; --hair-2: #999; --on-ink: #FFF; --paper: #FFF; --paper-ink: #000; color-scheme: light; }      /* ink on paper, whatever the theme on screen */
-  .field, .nav, .skip, .hero, .tools, .status, .hint, .why, .pick, .here, .band, footer, .veil, .omr-say { display: none !important; }
+  .field, .nav, .skip, .hero, .tools, .status, .hint, .why, .pick, .here, .playmark, .omr-mark, .band, footer, .veil, .omr-say { display: none !important; }
   body { background: #fff; color: #000; } .col { max-width: none; padding: 0; } .stage, .read { margin-top: 0; }
   .pane, .sheet { background: none; border: 0; box-shadow: none; padding: 0; } .pane::after { display: none; } .sheet { overflow: visible; min-height: 0; margin-top: 10px; }
   .meta, .legend { color: #000; } .chip { border: 0; background: none; padding: 0 10px 0 0; height: auto; box-shadow: none; color: #000; }
@@ -608,3 +615,86 @@ footer.col::before { content: ""; flex-basis: 100%; border-top: 1px solid var(--
 .omr-beats button.auto { text-decoration: underline; border-color: transparent; background: transparent; padding: 0 4px; }
 .omr-beats .how { color: var(--ink-3); }
 @media (hover: none) { .omr-beats button { min-width: 40px; height: 40px; } }
+
+/* listening */
+.listen:empty { display: none; }
+.player { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 10px 0 2px; font-size: 14px; color: var(--ink-2); }
+.player label { display: inline-flex; align-items: center; gap: 6px; }
+.player select { height: 34px; border-radius: 999px; border: 1px solid var(--hair); background: transparent; color: inherit; padding: 0 10px; font: inherit; }
+.player input[type=range] { width: 120px; accent-color: var(--ink); }
+.player output { min-width: 3ch; font-variant-numeric: tabular-nums; }
+.player-at { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+@media print { .listen { display: none; } }
+
+/* ------------------------------------------------------------------ polish (November 2026) */
+/* the title carries the page's own progression underneath it: home, away, the pull, home again */
+.mark::after { content: ""; display: block; width: min(4.1em, 100%); height: .085em; min-height: 5px; margin-top: .2em; border-radius: 99px;
+  background: linear-gradient(90deg, var(--c-tonic, #3a9a50) 0 22%, var(--c-submediant, #d2a22b) 22% 41%, var(--c-subdominant, #2f5fd0) 41% 60%, var(--c-dominant, #cc3333) 60% 80%, var(--c-tonic, #3a9a50) 80%);
+  transform-origin: left center; }
+@media (prefers-reduced-motion: no-preference) { html.js .mark::after { animation: ck-draw 1.1s .15s cubic-bezier(.2, .75, .2, 1) both; } }
+@keyframes ck-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* how far down the page: a hairline of the same colors along the foot of the navigation capsule */
+.nav-prog { position: absolute; left: 24px; right: 24px; bottom: 0; height: 2px; border-radius: 2px; pointer-events: none; transform: scaleX(0); transform-origin: left center; opacity: .8;
+  background: linear-gradient(90deg, var(--c-tonic, #3a9a50), var(--c-subdominant, #2f5fd0) 35%, var(--c-dominant, #cc3333) 70%, var(--c-tonic, #3a9a50)); }
+
+/* each section's small heading carries a stroke of one family's color */
+.band .eyebrow { display: inline-flex; align-items: center; gap: 10px; }
+.band .eyebrow::before { content: ""; width: 20px; height: 3px; border-radius: 3px; background: var(--fam, var(--c-tonic, currentColor)); }
+#colors { --fam: var(--c-tonic); } #yours { --fam: var(--c-subdominant); } #how { --fam: var(--c-dominant); } #found { --fam: var(--c-submediant); }
+#mind { --fam: var(--c-neapolitan); } #next { --fam: var(--c-applied); } #why { --fam: var(--c-mediant); } #sources { --fam: var(--c-supertonic); }
+
+/* the player: a clear Play, a quiet Stop, and a line that fills as the piece goes */
+.player .btn { gap: 7px; }
+.player .p-ic { display: inline-grid; place-items: center; width: 14px; height: 14px; }
+.player .p-ic svg { width: 14px; height: 14px; }
+.player .p-play { min-width: 104px; }
+.player .p-stop { padding: 0 14px; }
+.player-track { position: relative; flex: 1 1 140px; max-width: 320px; height: 4px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.player-track i { position: absolute; inset: 0; border-radius: inherit; transform: scaleX(0); transform-origin: left center; transition: transform .12s linear;
+  background: linear-gradient(90deg, var(--c-tonic, #3a9a50), var(--c-subdominant, #2f5fd0), var(--c-dominant, #cc3333)); }
+.player input[type=range] { accent-color: var(--c-tonic, var(--ink)); }
+.player-at:not(:empty) { padding: 3px 10px; border-radius: 999px; background: var(--wash); color: var(--ink-2); }
+
+/* the size of the score, and the whole screen for it */
+.view { display: flex; align-items: center; gap: 2px; margin-left: 12px; flex: none; color: var(--ink-2); }
+.view output { min-width: 4.2ch; text-align: center; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.view .icon-btn { width: 32px; height: 32px; }
+.view .icon-btn svg { width: 16px; height: 16px; }
+.view .icon-btn:disabled { opacity: .35; cursor: default; background: none; }
+.stage.is-full { margin: 0; padding: 14px 18px 24px; overflow: auto; background: var(--ground); }
+.stage.is-full .sheet { margin-top: 10px; }
+.stage::backdrop { background: var(--ground); }
+
+/* the chord card: hear it, then hear where it goes */
+.why .hear { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.why .hear .btn { height: 32px; padding: 0 13px; gap: 6px; }
+.why .hear .btn svg { width: 12px; height: 12px; }
+.why .hear .num { font-size: 15px; }
+.why .hear .dot { margin-left: 2px; }
+
+/* sections settle into place as they arrive */
+@media (prefers-reduced-motion: no-preference) {
+  html.js .rise { opacity: 0; transform: translateY(18px); transition: opacity .75s cubic-bezier(.2, .7, .2, 1), transform .75s cubic-bezier(.2, .7, .2, 1); }
+  html.js .rise.risen { opacity: 1; transform: none; }
+}
+
+/* back to the top */
+.to-top { position: fixed; right: 20px; bottom: 20px; z-index: 25; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--ink); text-decoration: none;
+  opacity: 0; transform: translateY(10px) scale(.9); pointer-events: none; transition: opacity .25s, transform .25s; }
+.to-top.shown { opacity: 1; transform: none; pointer-events: auto; }
+.to-top svg { width: 18px; height: 18px; }
+.to-top:hover { background: var(--btn-h); }
+
+/* softer interactions everywhere */
+.btn { transition: background .15s, border-color .15s, transform .15s, box-shadow .15s; }
+.btn:not(:disabled):active { transform: scale(.97); }
+.chip { transition: background .15s, border-color .15s, color .15s, box-shadow .15s; }
+
+@media (max-width: 720px) {
+  .view { margin-left: 0; }
+  .under { flex-wrap: wrap; row-gap: 6px; }
+  .player-track { order: 9; flex-basis: 100%; max-width: none; }
+  .to-top { right: 14px; bottom: 14px; }
+}
+@media print { .rise { opacity: 1 !important; transform: none !important; } .view, .to-top, .nav-prog, .hear { display: none !important; } .mark::after { animation: none; } }

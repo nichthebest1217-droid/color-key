@@ -99,6 +99,7 @@
             <button class="btn" id="print" type="button">Print</button>
           </div>
         </div>
+        <div class="listen" id="listen"></div>
         <div class="meta">
           <p class="keys" id="keys"></p>
           <p class="facts" id="facts"></p>
@@ -106,6 +107,12 @@
         <div class="under">
           <ul class="legend" id="legend"></ul>
           <p class="status" id="status" role="status"></p>
+          <div class="view" role="group" aria-label="Size of the score">
+            <button class="icon-btn" type="button" id="zoomOut" aria-label="Smaller" title="Smaller (−)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+            <output id="zoomAt" aria-live="polite">100%</output>
+            <button class="icon-btn" type="button" id="zoomIn" aria-label="Larger" title="Larger (+)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9M8 3.5v9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+            <button class="icon-btn" type="button" id="full" aria-label="Full screen" title="Full screen (F)" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.75 6V2.75H6M10 2.75h3.25V6M13.25 10v3.25H10M6 13.25H2.75V10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
         </div>
       </div>
       <div class="sheet" id="sheet"><div id="score"></div><div id="printScore" aria-hidden="true"></div></div>
@@ -451,6 +458,7 @@
         <div><dt>A wrong key spoils what follows.</dt><dd>The colors after it are wrong with it. Both readings count from the same key, so they can agree and still be wrong.</dd></div>
         <div><dt>Where it leads follows the chord names.</dt><dd>If a name or the key is wrong, its direction is wrong with it. The page does not follow a lean across a change of key. And an approach is a row of chord names, not a cadence: it knows nothing of phrase, rhythm or melody.</dd></div>
         <div><dt>Printed pages are read less surely than files.</dt><dd>The reader does not read ties, repeats or octave signs, and it can miscount a key signature on a crowded old engraving. Harmony Color from a picture is a draft: one misread note value can throw off a bar, and in some fonts that imitate handwriting the notes themselves are misread. A photo is best taken from straight above, in even light: I have only tested printed pages made to look like photos, not real ones.</dd></div>
+        <div><dt>The sound is a check for the ear, not a performance.</dt><dd>Play makes its tones in your browser from overtones; they are not recordings of instruments. It follows the repeats, tempos, dynamics and pedal a file gives, but not da capo, hairpins or articulation. A picture gives none of these. Before a picture plays, the page looks for ties and holds the notes it finds tied; it misses a tie that runs over the end of a line, and a slur between two notes of one pitch looks like a tie to it.</dd></div>
         <div><dt>The colors are a choice.</dt><dd>For some kinds of color vision the green and the red are hard to tell apart. The Roman numeral is always there as a second cue, and the colors can be changed.</dd></div>
         <div><dt>Whether colors help someone learn has not been tested.</dt><dd>That is the hope behind the project, not a result.</dd></div>
       </dl>
@@ -461,7 +469,7 @@
     <div class="col">
       <p class="eyebrow">Not done yet</p>
       <h2>Where this could go</h2>
-      <p class="intro">None of this is built. These are the next steps I can see, and some of them need other people.</p>
+      <p class="intro">Almost none of this is built yet. These are the next steps I can see, and some of them need other people.</p>
       <div class="next">
         <div>
           <h3>Read more</h3>
@@ -484,7 +492,7 @@
         <div>
           <h3>Reach more people</h3>
           <ul>
-            <li><b>Sound.</b><span class="tag">Not built</span><span>Click a chord and hear it. Hear the dominant, then hear it resolve.</span></li>
+            <li><b>Sound.</b><span class="tag">First version</span><span>Press Play under a score, or click a chord and choose Hear it, then hear the chord after it: the dominant, then where it resolves. The tones are made in the browser, not recorded instruments, and nobody has yet judged them by ear.</span></li>
             <li><b>A phone app.</b><span class="tag">Not started</span><span>Point a camera at the music on the stand.</span>
               <details><summary>More</summary><div class="more"><p>All the reading already happens on the device, so nothing would need to be uploaded. I have not tested the page on phones, or the reader on camera photos.</p></div></details></li>
           </ul>
@@ -564,6 +572,7 @@
 <script src="engine/overlay.js"></script>
 <script src="engine/second.js"></script>
 <script src="engine/lean.js"></script>
+<script src="player.js"></script>
 <script src="reader/ui.js"></script>
 <script src="studio.js"></script>
 <script src="app.js"></script>

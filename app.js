@@ -5,7 +5,8 @@
   const query = new URLSearchParams(location.search);
   let Studio = query.get("studio") === "0" ? null : (window.CKStudio || null);       // the "Make it yours" layer, when the build published it (studio.js)
   const state = { lang: null, base: null, dict: null, prog: null, examples: [], about: {}, name: "score", meta: {}, piece: null, score: null, result: null, report: null, pitch: null,
-                  readings: null, walk: {}, view: "harmony", pinned: null, osmd: null, xmlShown: null, same: null, token: 0, job: 0, ready: false, opened: false };
+                  readings: null, walk: {}, view: "harmony", pinned: null, osmd: null, xmlShown: null, same: null, token: 0, job: 0, ready: false, opened: false,
+                  zoom: (() => { let z = 1; try { z = +localStorage.getItem("colorkey-zoom") || 1; } catch (e) { /* not kept */ } return z >= 0.7 && z <= 1.6 ? z : 1; })() };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
   const pretty = s => String(s || "").replace(/##/g, "𝄪").replace(/#/g, "♯").replace(/(^|[^A-Za-z])bb(?=[IViv\d])/g, "$1𝄫").replace(/(^|[^A-Za-z])b(?=[IViv\d])/g, "$1♭");
   const keyName = n => { const m = /^([A-G])(##|#|bb|b)? (major|minor)$/.exec(n || ""); return m ? m[1] + ({ "#": "♯", "b": "♭", "##": "𝄪", "bb": "𝄫" }[m[2]] || "") + " " + m[3] : (n || ""); };
@@ -107,6 +108,11 @@
     const result = CK.analyze(score, state.dict, { backoff: true, keyStartPrior: true, confidentFrequency: 0.7,
       progression: { model: state.prog.model, weight: state.prog.weight, kappa: state.prog.kappa, prior: state.prog.prior } });
     stopReader(); $("omr").hidden = true; $("result").hidden = false;
+    if (window.ColorKeyPlayer) {              // listening: the score that is shown is the one that plays
+      const slot = $("listen");
+      if (slot && !slot.firstChild) slot.appendChild(window.ColorKeyPlayer.controls(() => state.score, { onPlace: playMark, onStop: clearMark }));
+      if (slot && slot.firstChild && slot.firstChild.reset) slot.firstChild.reset(); else window.ColorKeyPlayer.stop();
+    }
     state.name = name; state.meta = meta; state.same = null; state.pinned = null; state.readings = null; state.score = score; state.result = result;
     $("piece").textContent = meta.title || name; $("by").textContent = meta.composer || "";
     let key = name; if (Studio && Studio.pieceKey) { try { key = Studio.pieceKey(state.score); } catch (e) { console.error(e); } }
@@ -236,6 +242,31 @@
       setTimeout(() => { if (el.parentNode) el.remove(); }, 2600);
     } catch (e) { $("sheet").scrollIntoView(); }
   }
+  // While the score plays, a thin upright line moves through the bar that sounds. q: quarter notes from the start of the score.
+  let markSys = -1;
+  function clearMark() { const el = document.querySelector(".playmark"); if (el) el.remove(); markSys = -1; }
+  function playMark(q, bar) {
+    try {
+      const osmd = state.osmd, m = state.score.measures[bar - 1], row = osmd.GraphicSheet.MeasureList[bar - 1].filter(Boolean), unit = 10 * (osmd.zoom || osmd.Zoom || 1);
+      if ($("result").hidden || !row.length) return clearMark();
+      const a = row[0].PositionAndShape, z = row[row.length - 1].PositionAndShape, sheet = $("sheet");
+      const pts = [];
+      row.forEach(gm => (gm.staffEntries || []).forEach(se => { const t = se.relInMeasureTimestamp && se.relInMeasureTimestamp.RealValue; if (isFinite(t)) pts.push([t * 4, se.PositionAndShape.AbsolutePosition.x]); }));
+      pts.sort((u, v) => u[0] - v[0]); pts.push([m.end.num() - m.start.num(), a.AbsolutePosition.x + a.Size.width]);
+      if (!pts.length || pts[0][0] > 0) pts.unshift([0, pts.length > 1 ? Math.min(pts[0][1], a.AbsolutePosition.x + a.Size.width * 0.1) : a.AbsolutePosition.x]);
+      const rel = Math.max(0, q - m.start.num()); let x = pts[pts.length - 1][1];
+      for (let i = 0; i + 1 < pts.length; i++) if (rel >= pts[i][0] && rel <= pts[i + 1][0]) { const w = pts[i + 1][0] - pts[i][0]; x = pts[i][1] + (w > 0 ? (rel - pts[i][0]) / w : 0) * (pts[i + 1][1] - pts[i][1]); break; }
+      const sr = sheet.getBoundingClientRect(), vr = $("score").querySelector("svg").getBoundingClientRect();
+      let el = document.querySelector(".playmark"); if (!el) { el = document.createElement("div"); el.className = "playmark"; sheet.appendChild(el); }
+      const top = vr.top - sr.top + sheet.scrollTop + (a.AbsolutePosition.y - 1.5) * unit, h = (z.AbsolutePosition.y - a.AbsolutePosition.y + 7) * unit;
+      el.style.transform = "translate3d(" + (vr.left - sr.left + sheet.scrollLeft + x * unit).toFixed(1) + "px," + top.toFixed(1) + "px,0)"; el.style.height = h.toFixed(1) + "px";
+      const sys = Math.round(a.AbsolutePosition.y * 10);
+      if (sys !== markSys) {                    // a new system: bring it into view when it is not
+        markSys = sys; const y = sr.top + top;
+        if (y < 70 || y + h > window.innerHeight - 20) window.scrollTo({ top: window.scrollY + y - window.innerHeight * 0.25, behavior: still.matches ? "auto" : "smooth" });
+      }
+    } catch (e) { clearMark(); }
+  }
   // The names under the last system are drawn after the engraving, which keeps no room for them: the drawing is made as tall as what was added to it.
   function roomBelow(host) {
     try {
@@ -304,14 +335,14 @@
     await osmd.load(xml);
     if (token !== state.token) return;
     const w = host.clientWidth || 900, R = osmd.EngravingRules; lastW = host.clientWidth;
-    osmd.Zoom = w < 520 ? 0.6 : w < 800 ? 0.78 : 0.95;
+    osmd.Zoom = (w < 520 ? 0.6 : w < 800 ? 0.78 : 0.95) * (state.zoom || 1);
     R.PageTopMargin = 1; R.PageBottomMargin = 1;      // the sheet has its own padding: the first system starts near its top, so more of it shows when the page opens
     if (!state.rules0) state.rules0 = { staves: R.MinSkyBottomDistBetweenStaves, between: R.BetweenStaffDistance, staff: R.StaffDistance };
     R.MinSkyBottomDistBetweenStaves = state.rules0.staves; R.BetweenStaffDistance = state.rules0.between; R.StaffDistance = state.rules0.staff;
     R.MinSkyBottomDistBetweenSystems = harm ? 11.5 : 5; R.MinimumDistanceBetweenSystems = harm ? 6 : 4;
     osmd.render();
     const lab = harm ? labels() : [];
-    const over = () => OV.drawOverlay(osmd, host, lab, [], { size: w < 520 ? 21 : 18, font: "Georgia, 'Times New Roman', serif", noteFont: "system-ui, sans-serif", noteColor: "#555555", cueColor: "#555555" });
+    const over = () => OV.drawOverlay(osmd, host, lab, [], { size: Math.round((w < 520 ? 21 : 18) * Math.min(1.3, Math.max(0.85, state.zoom || 1))), font: "Georgia, 'Times New Roman', serif", noteFont: "system-ui, sans-serif", noteColor: "#555555", cueColor: "#555555" });
     let res = over(), staves = OV.staffOverlaps(osmd);
     for (let pass = 0; pass < 2 && staves.overlaps; pass++) {       // staves that meet get more room
       const deep = Math.max(1, ...staves.where.map(x => x.depth));
@@ -410,6 +441,21 @@
       return "scale degrees " + p.feats.map(f).join(" ") + (p.bass ? ", with " + f(p.bass) + " in the bass" : "");
     } catch (e) { return ""; }
   }
+  /* The notes of chord i (with the spans that only carry it on) and of the next chord that sounds, as MIDI numbers, for the
+     card's "Hear it". A note counts when it sounds while the chord lasts; the same pitch counts once. */
+  function hearing(i) {
+    const res = state.result, sc = state.score; if (!res || !sc || !sc.sounding) return null;
+    const S = res.spans, extent = k => { let e = k; while (e + 1 < S.length && S[e + 1].continuation) e += 1; return [S[k].start.num(), S[e].end.num(), e]; };
+    const notesIn = (a, b) => {
+      const set = new Set(); for (const n of sc.sounding) { const s = n.start.num(), e = n.end.num(); if (s < b - 1e-9 && e > a + 1e-9 && n.pitch && isFinite(n.pitch.midi)) set.add(n.pitch.midi); }
+      return [...set].sort((x, y) => x - y).slice(0, 10);
+    };
+    const [a, b, last] = extent(i), now = notesIn(a, b);
+    let j = last + 1; while (j < S.length && (S[j].status === "silent" || S[j].continuation)) j += 1;
+    if (j >= S.length) return { now, next: null };
+    const nx = S[j], [c, d] = extent(j), fam = state.lang.families.find(f => f.id === nx.family) || state.lang.unknown, mode = nx.key ? nx.key.mode : null;
+    return { now, next: notesIn(c, d), nextName: nx.textOverride ? written(nx.textOverride) : nx.label ? numeralOf(nx.label, mode) : "?", nextHex: nx.hex || fam.triad };
+  }
   function why(i, el, byKeys, aimTop) {      // aimTop: where in the window the numeral should come to rest (the walk through differing chords asks for it)
     closeWhy();
     const res = state.result, s = res ? res.spans[i] : null; if (!s || !el) return;
@@ -439,9 +485,15 @@
     }
     const where = "Bar " + esc(bar) + (s.key ? ", in " + esc(keyName(s.key.name)) : "")
       + (rd && rd.notesLine ? " · " + esc(rd.notesLine) : "." + (s.input ? " The notes are " + esc(describeNotes(s.input)) + "." : ""));
+    // hear the chord, and the chord after it: the notes that sound while each lasts, struck together
+    const ear = window.ColorKeyPlayer && window.ColorKeyPlayer.chords ? hearing(i) : null;
+    const hearRow = ear && ear.now.length ? `<p class="hear">`
+      + `<button class="btn" type="button" data-hear="one"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z" fill="currentColor"/></svg>Hear it</button>`
+      + (ear.next ? `<button class="btn" type="button" data-hear="two"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z" fill="currentColor"/></svg>Then ${num(ear.nextName)}<span class="dot" style="background:${esc(ear.nextHex)}"></span></button>` : "")
+      + `</p>` : "";
     let html = `<button class="x" type="button" aria-label="Close">×</button>`
       + `<h3><span class="dot" style="background:${esc(hex)}"></span>${num(shown)}<span class="fam">${esc(fam.plain.en)}${(s.label || s.textOverride) && s.seventh ? ", seventh chord" : ""}</span></h3>`
-      + `<p class="where">${where}</p>`;
+      + `<p class="where">${where}</p>` + hearRow;
     if (rule) {
       const name = (h, t, f) => `<p class="r-name"><span class="dot" style="background:${esc(h)}"></span>${num(t)}<span class="fam">${esc(f)}</span></p>`;
       const joined = rd.relation === "same-name" || rd.relation === "same-color";
@@ -480,6 +532,9 @@
     if (Math.abs(shift) > 1) window.scrollBy({ top: shift, behavior: smooth() });
     box.dataset.left = String(sheet.scrollLeft);
     box.querySelector(".x").addEventListener("click", closeWhy);
+    box.querySelectorAll("[data-hear]").forEach(b => b.addEventListener("click", () => {
+      window.ColorKeyPlayer.chords(b.dataset.hear === "two" ? [ear.now, ear.next] : [ear.now]);
+    }));
     box.addEventListener("keydown", e => {        // Tab stays inside the card until it is closed
       if (e.key !== "Tab") return;
       const f = [...box.querySelectorAll("button, summary, a[href], input, select, textarea")].filter(x => !x.disabled && x.getClientRects().length);
@@ -621,7 +676,7 @@
   function makeField() {
     const root = document.documentElement, host = document.getElementById("field"), els = [...host.querySelectorAll("canvas.f")], ringEl = host.querySelector(".ring");
     const reduce = media("(prefers-reduced-motion: reduce)"), off = /[?&]motion=off\b/.test(location.search), still = () => reduce.matches || off;
-    const N = 192, LIFE = 1.5;
+    const N = 192, LIFE = 2.6;
     const F = [       // hx, hy: where it rests (fractions of the window). size: its width, times the window's longer side. lean: how far it follows the pointer. tau: how slowly, in seconds.
       { hx: .16, hy: .12, size: 1.22, lean: .30, tau: 1.0 },
       { hx: .86, hy: .84, size: 1.22, lean: .36, tau: 1.3 },
@@ -678,9 +733,10 @@
     }
     function put(f) { f.el.style.transform = "translate3d(" + f.x.toFixed(1) + "px," + f.y.toFixed(1) + "px,0)"; if (f.light) f.el.style.opacity = f.o.toFixed(3); }
     function ringAt(x, y, p) {         // p runs from 0 (the press) to 1 (gone): the ring widens quickly, then slows, and fades as it goes
-      const e = 1 - Math.pow(1 - p, 2.2);
-      ringEl.style.transform = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) scale(" + (.18 + 2.3 * e).toFixed(3) + ")";
-      ringEl.style.opacity = (Math.min(1, p * LIFE / .08) * Math.pow(1 - p, .8)).toFixed(3);
+      // water: the swells travel at an almost even pace, only easing a little, come up gently and die away long before they stop
+      const e = 1 - Math.pow(1 - p, 1.45), rise = Math.min(1, p * LIFE / .22);
+      ringEl.style.transform = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) scale(" + (.10 + 2.5 * e).toFixed(3) + ")";
+      ringEl.style.opacity = (rise * rise * (3 - 2 * rise) * Math.pow(1 - p, 1.9)).toFixed(3);
     }
     function settle() {                // no easing: used at the start, on resize, on a theme change and for a reader who asked for less motion
       if (held) { P.x = held.x * vw; P.y = held.y * vh; P.on = true; }
@@ -856,6 +912,65 @@
   watch(media("(prefers-color-scheme: dark)"), e => { try { if (localStorage.getItem("colorkey-theme")) return; } catch (x) { /* follow the system */ } if (query.get("theme")) return; document.documentElement.dataset.theme = e.matches ? "dark" : "light"; Field.theme(); });
   let timer = null;
   window.addEventListener("resize", () => { clearTimeout(timer); timer = setTimeout(() => { const w = $("score").clientWidth; if (state.score && !$("result").hidden && Math.abs(w - lastW) > 24) { lastW = w; draw(); } }, 250); });
+
+  // the size of the score: a step larger or smaller than the size that fits the window, kept in this browser
+  const ZOOMS = [0.7, 0.8, 0.9, 1, 1.12, 1.25, 1.4, 1.6];
+  const showZoom = () => { $("zoomAt").textContent = Math.round(state.zoom * 100) + "%"; $("zoomOut").disabled = state.zoom <= ZOOMS[0]; $("zoomIn").disabled = state.zoom >= ZOOMS[ZOOMS.length - 1]; };
+  const zoomBy = d => {
+    const i = Math.max(0, Math.min(ZOOMS.length - 1, (d === 0 ? ZOOMS.indexOf(1) : ZOOMS.findIndex(z => z >= state.zoom - 1e-6) + d)));
+    if (ZOOMS[i] === state.zoom) return; state.zoom = ZOOMS[i]; showZoom();
+    try { localStorage.setItem("colorkey-zoom", String(state.zoom)); } catch (e) { /* not kept */ }
+    if (state.score && !$("result").hidden) draw();
+  };
+  $("zoomOut").addEventListener("click", () => zoomBy(-1));
+  $("zoomIn").addEventListener("click", () => zoomBy(1));
+  showZoom();
+  // the score alone on the screen, where the browser allows it
+  const stageEl = $("result"), fsOK = !!(stageEl.requestFullscreen || stageEl.webkitRequestFullscreen);
+  const fsNow = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const toggleFull = () => {
+    if (!fsOK) return;
+    if (fsNow()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else { const r = (stageEl.requestFullscreen || stageEl.webkitRequestFullscreen).call(stageEl); if (r && r.catch) r.catch(() => {}); }
+  };
+  $("full").hidden = !fsOK;
+  $("full").addEventListener("click", toggleFull);
+  ["fullscreenchange", "webkitfullscreenchange"].forEach(t => document.addEventListener(t, () => { const on = fsNow() === stageEl; $("full").setAttribute("aria-label", on ? "Leave full screen" : "Full screen"); stageEl.classList.toggle("is-full", on); closeWhy(); }));
+  // keys, while no field has the keyboard: space plays or pauses, H and P choose the colors, + and − size the score, F fills the screen
+  document.addEventListener("keydown", e => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || !state.score || $("result").hidden) return;
+    const t = e.target, typing = t && (t.isContentEditable || /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName));
+    if (typing) return;
+    const k = e.key;
+    if (k === " ") {
+      if (t && t.closest && t.closest("button, a, summary, [role=button], text[data-i], .why")) return;      // a focused control keeps its own space bar
+      const b = $("listen").querySelector('[data-p="play"]'); if (b) { e.preventDefault(); b.click(); }
+    } else if (k === "h" || k === "H" || k === "p" || k === "P") { const b = $("seg").querySelector(`button[data-view="${/h/i.test(k) ? "harmony" : "pitch"}"]`); if (b) b.click(); }
+    else if (k === "+" || k === "=") zoomBy(1);
+    else if (k === "-" || k === "_") zoomBy(-1);
+    else if (k === "0") zoomBy(0);
+    else if (k === "f" || k === "F") toggleFull();
+  });
+
+  // a slim line in the navigation shows how far down the page the reader is
+  const prog = document.createElement("i"); prog.className = "nav-prog"; prog.setAttribute("aria-hidden", "true");
+  document.querySelector(".nav-in").appendChild(prog);
+  let progRaf = 0;
+  const progress = () => { progRaf = 0; const h = document.documentElement.scrollHeight - window.innerHeight; prog.style.transform = "scaleX(" + (h > 0 ? Math.min(1, Math.max(0, window.scrollY / h)) : 0).toFixed(4) + ")"; };
+  window.addEventListener("scroll", () => { if (!progRaf) progRaf = requestAnimationFrame(progress); }, { passive: true });
+  progress();
+  // sections settle into place as they come into view (not for a reader who asked for less motion, and never hiding anything without a script)
+  if ("IntersectionObserver" in window && !media("(prefers-reduced-motion: reduce)").matches) {
+    const parts = [...document.querySelectorAll("section.band .col > *, footer.col")].filter(el => el.getBoundingClientRect().top > window.innerHeight);
+    parts.forEach(el => el.classList.add("rise"));
+    const ro = new IntersectionObserver(es => { for (const en of es) if (en.isIntersecting) { en.target.classList.add("risen"); ro.unobserve(en.target); } }, { rootMargin: "0px 0px -8% 0px" });
+    parts.forEach(el => ro.observe(el));
+  }
+  // back to the top, once the score is out of sight
+  const up = document.createElement("a"); up.className = "to-top glass"; up.href = "#top"; up.setAttribute("aria-label", "Back to the top");
+  up.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3.5M3.5 8 8 3.5 12.5 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  document.body.appendChild(up);
+  window.addEventListener("scroll", () => up.classList.toggle("shown", window.scrollY > window.innerHeight * 1.6), { passive: true });
 
   // Paper. One drawing per system, each a window onto the score's own drawing, so a page break falls between two systems and never through one,
   // and the title shares the first page. Written just before printing and taken away after; where a browser does not say that it is about to print, the score prints as it is.

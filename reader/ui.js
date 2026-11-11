@@ -51,6 +51,7 @@
             <button class="btn solid" id="omrSave" type="button" disabled>Download colored pages</button>
           </div>
         </div>
+        <div class="listen" id="omrListen"></div>
         <div class="meta"><p class="facts" id="omrFacts"></p><p class="omr-beats" id="omrBeats" hidden></p></div>
         <div class="under"><ul class="legend" id="omrLegend"></ul><p class="status" id="omrStatus" role="status"></p></div>
         <p class="omr-say" id="omrSay">${mq("(hover: none)") ? "Tap" : "Point at"} a note to see how it was read.</p>
@@ -60,12 +61,23 @@
     </section>`;
     $("omrNames").addEventListener("click", () => { state.names = !state.names; $("omrNames").setAttribute("aria-pressed", String(state.names)); state.pages.forEach(paint); });
     $("omrSave").addEventListener("click", save);
+    if (window.ColorKeyPlayer) $("omrListen").appendChild(window.ColorKeyPlayer.controls(async () => {       // listening needs the timed reading: it is made on the first Play
+      if (state.job || !state.pages.some(p => p.result.notes.length)) return null;
+      if (!state.harmony) {
+        const status = t => { if ($("omrStatus")) $("omrStatus").textContent = t; };
+        let hr = null; try { hr = await harmonyRead(status); } catch (e) { console.error(e); }
+        status(""); if (!hr || !hr.ok) return null;
+        state.harmony = hr;
+      }
+      return await tiedScore();
+    }, { onPlace: playMark, onStop: clearMark }));
     box.querySelector(".seg").addEventListener("click", e => {
       const b = e.target.closest("button[data-omr]"); if (!b || b.dataset.omr === state.view || state.job) return;
       setView(b.dataset.omr);
     });
     $("omrBeats").addEventListener("click", e => {
       const b = e.target.closest("button[data-beats]"); if (!b || state.job) return;
+      if (window.ColorKeyPlayer) window.ColorKeyPlayer.stop();
       state.beats = +b.dataset.beats || null; state.harmony = null; setView("harmony");
     });
     box.scrollIntoView({ block: "start", behavior: mq("(prefers-reduced-motion: reduce)") ? "auto" : "smooth" });
@@ -145,6 +157,43 @@
     status(view !== "harmony" ? "" : state.harmony.chosen === "counted" ? "A draft. The bars are counted from the note values the page read. Ties, small notes and repeats are not read." : "A draft. The page sees where the notes stand, not how long they last.");
     state.pages.forEach(paint); summary();
     if ($("omrSay")) $("omrSay").textContent = (mq("(hover: none)") ? "Tap" : "Point at") + (view === "harmony" ? " a note to see the chord it was read in." : " a note to see how it was read.");
+  }
+  // For the ear: two noteheads of one pitch with a bowed line between them sound as one held note (reader/ties.js). The colors are not touched.
+  async function tiedScore() {
+    const hr = state.harmony; if (hr.played) return hr.played;
+    hr.played = hr.score;
+    try {
+      await script("reader/ties.js");
+      const R = window.ColorKeyReader, pages = state.pages.map(pg => {
+        const img = pg.image.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, pg.image.width, pg.image.height);
+        return { gray: R.toGray(img.data, img.width, img.height), width: img.width, height: img.height, staves: pg.result.staves };
+      });
+      const j = window.ColorKeyTies.join(hr, pages); hr.played = j.score; hr.tied = j.tied;
+    } catch (e) { console.warn(e); }
+    return hr.played;
+  }
+  // While a picture plays, a thin upright line moves through the bar that sounds, on the page that holds it.
+  let markAt = null;
+  function clearMark() { document.querySelectorAll(".omr-mark").forEach(el => el.remove()); markAt = null; }
+  function playMark(q, barNo) {
+    try {
+      const hr = state.harmony, bar = hr && hr.layout.bars[barNo - 1], m = hr && hr.score.measures[barNo - 1]; if (!bar || !m) return clearMark();
+      const sys = bar.sys, pg = state.pages[sys.page], cv = pg.canvas, wrap = cv.parentNode;
+      const pts = bar.cols.map((c, i) => [bar.t480[i] / 480, c.x]).filter(p => isFinite(p[0]) && isFinite(p[1])).sort((a, b) => a[0] - b[0]);
+      pts.push([m.end.num() - m.start.num(), bar.xb]); if (!pts.length || pts[0][0] > 0) pts.unshift([0, bar.xa]);
+      const rel = Math.max(0, q - m.start.num()); let x = bar.xb;
+      for (let i = 0; i + 1 < pts.length; i++) if (rel >= pts[i][0] && rel <= pts[i + 1][0]) { const w = pts[i + 1][0] - pts[i][0]; x = pts[i][1] + (w > 0 ? (rel - pts[i][0]) / w : 0) * (pts[i + 1][1] - pts[i][1]); break; }
+      const first = sys.staves[0], last = sys.staves[sys.staves.length - 1], y0 = first.top - 1.5 * sys.space, y1 = last.top + 5.5 * sys.space;
+      let el = wrap.querySelector(".omr-mark");
+      if (!el) { clearMark(); el = document.createElement("i"); el.className = "omr-mark"; wrap.appendChild(el); }
+      const k = cv.clientWidth / cv.width;
+      el.style.transform = `translate3d(${(cv.offsetLeft + x * k).toFixed(1)}px,${(cv.offsetTop + y0 * k).toFixed(1)}px,0)`; el.style.height = ((y1 - y0) * k).toFixed(1) + "px";
+      const id = sys.page + "|" + sys.system;
+      if (id !== markAt) {                      // a new system: bring it into view when it is not
+        markAt = id; const r = cv.getBoundingClientRect(), top = r.top + y0 * k, h = (y1 - y0) * k;
+        if (top < 70 || top + h > window.innerHeight - 20) window.scrollTo({ top: window.scrollY + top - window.innerHeight * 0.25, behavior: mq("(prefers-reduced-motion: reduce)") ? "auto" : "smooth" });
+      }
+    } catch (e) { clearMark(); }
   }
   function paintHarmony(pg) {
     const cv = pg.canvas, g = cv.getContext("2d"), hr = state.harmony, pi = state.pages.indexOf(pg);
@@ -293,6 +342,7 @@
     try { await mine; } finally { if (state.job === mine) state.job = null; }
   }
   async function read(file, token) {
+    if (window.ColorKeyPlayer) window.ColorKeyPlayer.stop();
     state.pages = []; state.file = (file.name || "score").replace(/\.[^.]+$/, ""); state.view = "pitch"; state.harmony = null; state.beats = null;
     frame(state.file);
     const live = () => token === state.token, status = t => { if (live() && $("omrStatus")) $("omrStatus").textContent = t; };
